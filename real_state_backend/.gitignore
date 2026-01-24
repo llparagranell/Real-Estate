@@ -1,5 +1,3 @@
-
-/generated/prisma
 # =========================
 # Node.js
 # =========================
@@ -71,3 +69,6 @@ Thumbs.db
 # =========================
 tmp/
 temp/
+
+# Prisma
+prisma/generated/prisma/
