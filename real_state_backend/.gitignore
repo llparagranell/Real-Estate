@@ -71,4 +71,4 @@ tmp/
 temp/
 
 # Prisma
-prisma/generated/prisma/
+prisma/generated/
