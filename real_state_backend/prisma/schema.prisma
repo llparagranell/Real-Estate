@@ -23,8 +23,8 @@ model User {
   avatar       String?
   isBlocked    Boolean @default(false)
   referralCode String  @unique @default(cuid())
-  referralId   String?
-  referrer     User?   @relation("Referrals", references: [id], fields: [referralId])
+  referrerId   String?
+  referrer     User?   @relation("Referrals", references: [id], fields: [referrerId])
   referrals    User[]  @relation("Referrals") //users referred by User. 
   points       Int     @default(0)
 

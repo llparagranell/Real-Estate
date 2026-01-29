@@ -8,10 +8,6 @@ export const signupSchema = z.object({
         /^\+[1-9]\d{6,14}$/,
         'Invalid phone number. Use international format: +1234567890'
     ),
-    whatsapp: z.string().regex(
-        /^\+[1-9]\d{6,14}$/,
-        'Invalid phone number. Use international format: +1234567890'
-    ),
     password: z.string().min(6,"password must be atleast 6 characters long")
 });
 
@@ -43,13 +39,9 @@ export const updateProfileSchema = z.object({
         /^\+[1-9]\d{6,14}$/,
         'Invalid phone number. Use international format: +1234567890'
     ),
-    whatsapp: z.string().regex(
-        /^\+[1-9]\d{6,14}$/,
-        'Invalid phone number. Use international format: +1234567890'
-    ),
     password: z.string().min(6,"password must be atleast 6 characters long")
 })
 
 export type SignupInput = z.infer<typeof signupSchema>;
-export type SignInput = z.infer<typeof signinSchema>;
+export type SigninInput = z.infer<typeof signinSchema>;
 export type UpdateProfieInput = z.infer<typeof updateProfileSchema>
