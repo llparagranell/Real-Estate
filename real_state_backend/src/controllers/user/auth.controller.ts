@@ -3,7 +3,7 @@ import { hashPassword, comparePassword } from "../../utils/password";
 import { signAccessToken, signRefreshToken } from "../../utils/jwt";
 import { Request, Response } from "express";
 import { generateReferralCode } from "../../utils/generateReferralCode";
-
+import { verifyRefreshToken } from "../../utils/jwt";
 
 //check status codes at last
 export async function signup(req: Request, res: Response) {
@@ -93,7 +93,7 @@ export async function signin(req: Request, res: Response) {
 
 export async function signout(req: Request, res: Response) {
     try {
-        const {refreshToken} = req.body;
+        const { refreshToken } = req.body;
         if (!refreshToken) {
             return res.status(401).json({ error: "Refresh Token not found" });
         }
@@ -117,5 +117,36 @@ export async function signoutAll(req: Request, res: Response) {
         return res.json({ message: "Logged out successfully" });
     } catch (error) {
         return res.status(500).json({ error: "Internal server error" })
+    }
+}
+
+export async function refreshAccessToken(req: Request, res: Response) {
+    try {
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            return res.status(400).json({ error: "Refresh token required" });
+        }
+        // Verify JWT
+        const payload = verifyRefreshToken(refreshToken);
+        if (!payload) {
+            return res.status(401).json({ error: "Invalid refresh token" });
+        }
+        const storedToken = await prisma.refreshToken.findFirst({
+            where: {
+                userId: payload.id,
+                isRevoked: false,
+                expiresAt: { gt: new Date() }
+            }
+        });
+
+        if (!storedToken) {
+            return res.status(401).json({ error: "Token revoked or expired" });
+        }
+        const newAccessToken = signAccessToken({ id: payload.id, role: "user" });
+
+        return res.json({ accessToken: newAccessToken });
+
+    } catch (error) {
+        return res.status(500).json({ error: "Internal server error" });
     }
 }

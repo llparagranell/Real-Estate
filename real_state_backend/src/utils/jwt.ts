@@ -27,7 +27,7 @@ export function signRefreshToken(payload: {
     id: string,
     role: string
 }){
-    return Jwt.sign(payload,ACCESS_TOKEN_SECRET,{expiresIn:'7d'})
+    return Jwt.sign(payload,REFRESH_TOKEN_SECRET,{expiresIn:'7d'})
 }
 
 export function verifyAccessToken(token:string): TokenPayload {
@@ -38,3 +38,10 @@ export function verifyAccessToken(token:string): TokenPayload {
     }
 }
 
+export function verifyRefreshToken(token: string): TokenPayload | null {
+    try {
+        return Jwt.verify(token, REFRESH_TOKEN_SECRET) as TokenPayload;
+    } catch {
+        return null;
+    }
+}
