@@ -8,7 +8,8 @@ export const signupSchema = z.object({
         /^\+[1-9]\d{6,14}$/,
         'Invalid phone number. Use international format: +1234567890'
     ),
-    password: z.string().min(6,"password must be atleast 6 characters long")
+    password: z.string().min(6,"password must be atleast 6 characters long"),
+    referrerId: z.string().optional()
 });
 
 export const signinSchema =z.object({

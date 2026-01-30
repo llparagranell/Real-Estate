@@ -1,6 +1,6 @@
 import Jwt, {JwtPayload, SignOptions} from "jsonwebtoken";
 
-const ACCESS_TOKEN_SECRET = process.env.ACCES_TOKEN_SECRET as string;
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET as string;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET as string;
 
 if(!ACCESS_TOKEN_SECRET || !REFRESH_TOKEN_SECRET){

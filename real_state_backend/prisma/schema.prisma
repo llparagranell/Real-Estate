@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "./generated"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -22,7 +21,7 @@ model User {
   password     String
   avatar       String?
   isBlocked    Boolean @default(false)
-  referralCode String  @unique @default(cuid())
+  referralCode String  @unique 
   referrerId   String?
   referrer     User?   @relation("Referrals", references: [id], fields: [referrerId])
   referrals    User[]  @relation("Referrals") //users referred by User. 
@@ -36,7 +35,7 @@ model User {
   properties    Property[]
   otps          Otp[]
   refreshTokens RefreshToken[]
-
+  @@index([id])
   @@map("users")
 }
 
