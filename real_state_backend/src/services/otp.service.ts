@@ -28,7 +28,7 @@ export async function createOtp(userId: string, type: OtpType) {
         }
     });
 
-    const code = generateOtpCode();
+    const code:string = generateOtpCode();
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
     const otp = await prisma.otp.create({

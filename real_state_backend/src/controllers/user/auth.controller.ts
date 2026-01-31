@@ -162,17 +162,15 @@ export async function sendOtp(req: Request, res: Response) {
         const user = await prisma.user.findUnique({
             where: { email }
         })
-        console.log(user)
         if (!user) {
             return res.status(401).json({ error: "No user found with this email" });
         }
-        //create otp
-        const otp:string  = generateOtpCode();
-        console.log(email, otp)
-        await sendOtpEmail(email, otp);
-        return res.json({ message: "OTP sent successfully" });
+        const createEmailOtp  = await createOtp(user.id,"EMAIL");
+        await sendOtpEmail(email, createEmailOtp.code);
+        return res.json({ message: "OTP sent successfully" },);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Failed to send OTP" });
     }
 }
+
