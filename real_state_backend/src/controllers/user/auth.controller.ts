@@ -4,6 +4,8 @@ import { signAccessToken, signRefreshToken } from "../../utils/jwt";
 import { Request, Response } from "express";
 import { generateReferralCode } from "../../utils/generateReferralCode";
 import { verifyRefreshToken } from "../../utils/jwt";
+import { createOtp, generateOtpCode, sendOtpEmail, verifyOtp as verifyOtpService } from "../../services/otp.service";
+import { OtpType } from "@prisma/client";
 
 //check status codes at last
 export async function signup(req: Request, res: Response) {
@@ -148,5 +150,29 @@ export async function refreshAccessToken(req: Request, res: Response) {
 
     } catch (error) {
         return res.status(500).json({ error: "Internal server error" });
+    }
+}
+
+export async function sendOtp(req: Request, res: Response) {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: "Please enter a valid email" });
+        }
+        const user = await prisma.user.findUnique({
+            where: { email }
+        })
+        console.log(user)
+        if (!user) {
+            return res.status(401).json({ error: "No user found with this email" });
+        }
+        //create otp
+        const otp:string  = generateOtpCode();
+        console.log(email, otp)
+        await sendOtpEmail(email, otp);
+        return res.json({ message: "OTP sent successfully" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Failed to send OTP" });
     }
 }

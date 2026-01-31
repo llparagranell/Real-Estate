@@ -1,8 +1,10 @@
 import { prisma } from "../config/prisma";
 import { OtpType } from "@prisma/client";
+import { Resend } from "resend";
 
 const OTP_EXPIRY_MINUTES = 5;
 const OTP_LENGTH = 6;
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export function generateOtpCode(length: number = OTP_LENGTH): string {
     const digits = '0123456789';
@@ -108,4 +110,31 @@ export async function getLatestValidOtp(userId: string, type: OtpType) {
             createdAt: 'desc'
         }
     });
+}
+
+export async function sendOtpEmail (email: string, otp: string){
+    try {
+        const { data, error } = await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+            to: [email],
+            subject: 'Your OTP code is here',
+            html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #333;">OTP Verification</h2>
+              <p>Your OTP code is:</p>
+              <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
+                <span style="font-size: 24px; font-weight: bold; color: #007bff; letter-spacing: 2px;">${otp}</span>
+              </div>
+              <p style="color: #666;">This code is valid for 5 minutes.</p>
+              <p style="color: #666; font-size: 12px;">If you didn't request this code, please ignore this email.</p>
+            </div>
+          `,
+        });
+        if (error) {
+            throw new Error(`Failed to send email: ${error}`);
+        }
+        return data;
+    } catch (error) {
+        throw new Error(`Failed to send email: ${error}`);
+    }
 }

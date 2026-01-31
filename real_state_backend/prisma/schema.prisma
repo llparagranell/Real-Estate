@@ -35,7 +35,7 @@ model User {
   properties    Property[]
   otps          Otp[]
   refreshTokens RefreshToken[]
-  @@index([id])
+  @@index([id,email])
   @@map("users")
 }
 
