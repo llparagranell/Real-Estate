@@ -121,6 +121,7 @@ model PropertyMedia {
 enum OtpType {
   EMAIL
   PHONE
+  RESET_PASSWORD
 }
 
 model Otp {

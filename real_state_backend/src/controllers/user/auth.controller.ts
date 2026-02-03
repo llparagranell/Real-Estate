@@ -192,12 +192,68 @@ export async function verifyOtpEmail(req: Request, res: Response) {
         const verifyEmailOtp = await verifyOtp(user.id, code, "EMAIL");
         if (verifyEmailOtp.valid) {
             return res.status(200).json({ message: verifyEmailOtp.message })
-        }else{
-            return res.status(400).json({messsage:"Invalid OTP. Please enter correct otp"})
+        } else {
+            return res.status(400).json({ messsage: "Invalid OTP. Please enter correct otp" })
         }
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Failed to verify OTP" })
+    }
+}
+
+export async function forgotPassword(req: Request, res: Response) {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ error: "Please enter a valid email" });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        if (!user) {
+            return res.status(200).json({ message: "User doesn't exist with this email" })
+        }
+        const otpResult = await createOtp(user.id, "RESET_PASSWORD");
+        await sendOtpEmail(email, otpResult.code);
+
+        return res.status(200).json({ message: "OTP sent successfully" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Failed to process request" });
+    }
+}
+
+export async function resetPassword(req: Request, res: Response) {
+    try {
+        const { email, code, newPassword } = req.body;
+        if (!email || !code || !newPassword) {
+            return res.status(400).json({ error: "Email, OTP code, and new password are required" });
+        }
+        // Validate password length
+        if (newPassword.length < 8) {
+            return res.status(400).json({ error: "Password must be at least 8 characters" });
+        }
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+        if (!user) {
+            return res.status(400).json({ error: "User not found" });
+        }
+        const otpResult = await verifyOtp(user.id, code, "RESET_PASSWORD");
+        if (!otpResult.valid) {
+            return res.status(400).json({ error: "invalid or expired OTP" });
+        }
+        const hashedPassword = await hashPassword(newPassword);
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { password: hashedPassword }
+        });
+        return res.status(200).json({ message: "Password reset successfully" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Failed to reset password" });
     }
 }
 

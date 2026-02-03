@@ -14,7 +14,7 @@ export function generateOtpCode(length: number = OTP_LENGTH): string {
     }
     return otp;
 }
-
+    
 export async function createOtp(userId: string, type: OtpType) {
     // Revoke any existing OTPs of the same type for this user
     await prisma.otp.updateMany({
