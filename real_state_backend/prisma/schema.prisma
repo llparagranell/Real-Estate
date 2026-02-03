@@ -21,7 +21,7 @@ model User {
   password     String
   avatar       String?
   isBlocked    Boolean @default(false)
-  referralCode String  @unique 
+  referralCode String  @unique
   referrerId   String?
   referrer     User?   @relation("Referrals", references: [id], fields: [referrerId])
   referrals    User[]  @relation("Referrals") //users referred by User. 
@@ -32,10 +32,12 @@ model User {
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  kyc           Kyc[]
   properties    Property[]
   otps          Otp[]
   refreshTokens RefreshToken[]
-  @@index([id,email])
+
+  @@index([id, email])
   @@map("users")
 }
 
@@ -75,8 +77,8 @@ model Property {
   address      String
   latitude     Float
   longitude    Float
-  size Float?
-  sizeUnit SizeUnit
+  size         Float?
+  sizeUnit     SizeUnit
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -102,18 +104,48 @@ enum MediaType {
 }
 
 model PropertyMedia {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   url       String
   key       String // s3 key for deletion
   mediaType MediaType
-  order     Int      @default(0) // for ordering photos
-  createdAt DateTime @default(now())
+  order     Int       @default(0) // for ordering photos
+  createdAt DateTime  @default(now())
 
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@map("property_media")
+}
+
+enum KycType {
+  AADHARCARD
+  PANCARD
+}
+
+enum KycStatus {
+  PENDING
+  VERFIED
+  REJECTED
+}
+
+model Kyc {
+  id              String @id @default(cuid())
+  type            KycStatus
+  status          KycStatus @default(PENDING)
+  docNo           String
+  imageUrl        String
+  imageKey        String
+  rejectionReason String?
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@index([status])
+  @@map("kyc")
 }
 
 //AUTH
