@@ -14,7 +14,11 @@ export async function signup(req: Request, res: Response) {
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
     try {
-        const { firstName, lastName, email, phone, password, referrerId } = req.body
+        const {
+            firstName, lastName, email, phone, password, referrerId,
+            aadharNo, kycAadharImageUrl, kycAadharImageKey,
+            panNo, kycPanImageUrl, kycPanImageKey
+        } = req.body;
         if (!req.body) {
             return res.status(404).json("Please fill all the details")
         }
@@ -41,7 +45,25 @@ export async function signup(req: Request, res: Response) {
                 phone,
                 password: await hashPassword(password),
                 referralCode: userReferralCode,
-                referrerId: referrer?.id
+                referrerId: referrer?.id,
+                kyc: {
+                    create: [
+                        {
+                            type: "AADHARCARD",
+                            docNo: aadharNo,
+                            imageUrl: kycAadharImageUrl,
+                            imageKey: kycAadharImageKey,
+                            status: "PENDING",
+                        },
+                        {
+                            type: "PANCARD",
+                            docNo: panNo,
+                            imageUrl: kycPanImageUrl,
+                            imageKey: kycPanImageKey,
+                            status: "PENDING",
+                        }
+                    ]
+                }
             }
         })
         //write logic to award points to one to referrers after clarification from team.
@@ -191,6 +213,12 @@ export async function verifyOtpEmail(req: Request, res: Response) {
         }
         const verifyEmailOtp = await verifyOtp(user.id, code, "EMAIL");
         if (verifyEmailOtp.valid) {
+            await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    isEmailVerified: true
+                }
+            })
             return res.status(200).json({ message: verifyEmailOtp.message })
         } else {
             return res.status(400).json({ messsage: "Invalid OTP. Please enter correct otp" })

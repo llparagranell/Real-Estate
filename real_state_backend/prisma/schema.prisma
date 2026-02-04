@@ -131,7 +131,7 @@ enum KycStatus {
 
 model Kyc {
   id              String @id @default(cuid())
-  type            KycStatus
+  type            KycType
   status          KycStatus @default(PENDING)
   docNo           String
   imageUrl        String
