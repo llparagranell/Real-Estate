@@ -1,6 +1,6 @@
 import { prisma } from "../../config/prisma";
 import { Request, Response } from "express";
-import { addPropertySchema } from "../../validators/property.validators";
+import { addMediaSchema, addPropertySchema, updatePropertySchema } from "../../validators/property.validators";
 import z from "zod";
 
 type Params = {
@@ -65,7 +65,7 @@ export async function getAllProperties(req: Request, res: Response) {
         console.error(error);
         return res.status(500).json({ message: "Internval server Error" })
     }
-}   
+}
 //get my properties
 
 export async function getMyProperties(req: Request, res: Response) {
@@ -113,3 +113,84 @@ export async function getProperty(req: Request<Params>, res: Response) {
     }
 }
 
+export async function updateProperty(req: Request<Params>, res: Response) {
+    try {
+        const { id } = req.params;
+        type UpdatePropertyInput = z.infer<typeof updatePropertySchema>;
+        const body = req.body as UpdatePropertyInput;
+        const { ...propertyData } = body;
+        const property = await prisma.property.update({
+            where: {
+                id,
+                userId: req.user?.id
+            },
+            data: propertyData,
+        });
+        return res.status(404).json({
+            success: true,
+            data: property
+        })
+
+    } catch (error: any) {
+        console.error(error);
+        if (error.code === "P2025") {
+            return res.status(404).json({
+                message: "Property not found or not owned by user",
+            });
+        }
+        return res.status(500).json({
+            message: "Internal server error",
+        });
+    }
+}
+
+export async function addMedia(req: Request<Params>, res: Response) {
+    try {
+        if (!req.user?.id) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        type AddMediaInput = z.infer<typeof addMediaSchema>;
+        const { id: propertyId } = req.params;
+        const { media } = req.body as AddMediaInput;
+        const property = await prisma.property.findFirst({
+            where: {
+                id: propertyId,
+                userId: req.user.id,
+            },
+            select: { id: true },
+        });
+        if (!property) {
+            return res.status(404).json({
+                message: "Property not found or not owned by user",
+            });
+        }
+        const lastMedia = await prisma.propertyMedia.findFirst({
+            where: { propertyId },
+            orderBy: { order: "desc" },
+            select: { order: true }
+        })
+        const startingOrder = lastMedia ? lastMedia.order + 1 : 0;
+        await prisma.propertyMedia.createMany({
+            data: media.map((m, index) => ({
+                propertyId,
+                url: m.url,
+                key: m.key,
+                mediaType: m.mediaType,
+                order: startingOrder + index,
+            })),
+        });
+        const updatedMedia = await prisma.propertyMedia.findMany({
+            where: { propertyId },
+            orderBy: { order: "asc" },
+        });
+        return res.status(201).json({
+            success: true,
+            data: updatedMedia,
+        });
+    } catch(error) {
+        console.error(error);
+        return res.status(500).json({
+            message:"Interval server error"
+        })
+    }
+}

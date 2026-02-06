@@ -32,7 +32,7 @@ export const propertyMediaSchema = z.object({
 export const addPropertySchema = z.object({
     title: z.string(),
     description: z.string(),
-    status:    z.enum(StatusEnum).default("ACTIVE"),
+    status: z.enum(StatusEnum).default("ACTIVE"),
     propertyType: z.enum(propertyTypeEnum),
     priceMin: z.number(),
     priceMax: z.number().optional(),
@@ -44,7 +44,38 @@ export const addPropertySchema = z.object({
     latitude: z.number(),
     size: z.number(),
     sizeUnit: z.enum(sizeUnitEnum),
-    media: z.array(propertyMediaSchema).min(1,"At least one media file is required")
+    media: z.array(propertyMediaSchema).min(1, "At least one media file is required")
 });
 
+export const updatePropertySchema = z.object({
+    title: z.string(),
+    description: z.string(),
+    status: z.enum(StatusEnum).default("ACTIVE"),
+    propertyType: z.enum(propertyTypeEnum),
+    priceMin: z.number(),
+    priceMax: z.number().optional(),
+    state: z.string(),
+    city: z.string(),
+    area: z.string(),
+    address: z.string(),
+    longitude: z.number(),
+    latitude: z.number(),
+    size: z.number(),
+    sizeUnit: z.enum(sizeUnitEnum),
+})
+
+
+export const addMediaSchema = z.object({
+    media: z.array(
+        z.object({
+            url: z.url(),
+            key: z.string(),
+            mediaType: z.enum(MediaTypeEnum),
+        })
+    ).min(1),
+})
+
+
 export type addPropertyInput = z.infer<typeof addPropertySchema>;
+export type updatePropertyInput = z.infer<typeof updatePropertySchema>;
+export type addMediaSchema = z.infer<typeof addMediaSchema>;
