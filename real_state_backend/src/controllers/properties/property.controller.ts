@@ -42,6 +42,30 @@ export async function addProperty(req: Request, res: Response) {
         return res.status(500).json({ message: "Internal server Error" })
     }
 }
+
+export async function deleteProperty(req: Request<Params>, res: Response) {
+    try {
+        const { id } = req.params;
+        await prisma.property.delete({
+            where: {
+                id,
+                userId: req.user?.id,
+            },
+        });
+        return res.status(200).json({
+            success: true,
+            message: `Property with id ${id} deleted successfully`
+        })
+    } catch (error: any) {
+        console.error(error);
+        if (error.code === "P2025") {
+            return res.status(404).json({
+                message: "Property not found or not owned by user",
+            });
+        };
+        return res.status(500).json({ message: "Interval server error" });
+    }
+}
 //Get All Properties
 export async function getAllProperties(req: Request, res: Response) {
     try {
@@ -65,9 +89,9 @@ export async function getAllProperties(req: Request, res: Response) {
         console.error(error);
         return res.status(500).json({ message: "Internval server Error" })
     }
-}
-//get my properties
+};
 
+//get my properties
 export async function getMyProperties(req: Request, res: Response) {
     try {
         const userId = req.user?.id;
@@ -187,10 +211,52 @@ export async function addMedia(req: Request<Params>, res: Response) {
             success: true,
             data: updatedMedia,
         });
-    } catch(error) {
+    } catch (error) {
         console.error(error);
         return res.status(500).json({
-            message:"Interval server error"
+            message: "Interval server error"
         })
+    }
+}
+
+export async function deleteMedia(req: Request<Params>, res: Response) {
+    try {
+        const { id } = req.params;
+        const media = await prisma.propertyMedia.findUnique({
+            where: { id },
+            include: {
+                property: {
+                    select: { userId: true },
+                },
+            },
+        });
+
+        if (!media) {
+            return res.status(404).json({
+                message: "Media not found",
+            });
+        }
+        if (media.property.userId !== req.user?.id) {
+            return res.status(403).json({
+                message: "You are not allowed to delete this media",
+            });
+        }
+
+        await prisma.propertyMedia.delete({
+            where: { id },
+        });
+        // await s3.send(
+        //     new DeleteObjectCommand({
+        //         Bucket: process.env.AWS_BUCKET_NAME!,
+        //         Key: media.key,
+        //     })
+        // );
+        return res.status(200).json({
+            success: true,
+            message: "Media deleted successfully",
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "interval server error" })
     }
 }
