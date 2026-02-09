@@ -267,4 +267,40 @@ export async function deleteMedia(req: Request<Params>, res: Response) {
         console.error(error);
         return res.status(500).json({ message: "interval server error" })
     }
-}
+};
+
+export async function changeStatus(req:Request<Params>,res:Response){
+    try{
+        const userId = req.user?.id;
+        if(!userId){
+            return res.status(400).json({message:"UnAuthorized"})
+        }
+        const { id } = req.params;
+        const { status } = req.body;
+        if(!id || !status){
+            return res.status(404).json({message:"Please provide property id"})
+        }
+        const property = await prisma.property.findUnique({
+            where:{
+                id,
+                userId
+            }
+        });
+        if(!property){
+            return res.status(404).json({message:"Property not found for this user"})
+        }
+        await prisma.property.update({
+            where:{id,userId},
+            data:{
+                status
+            }
+        });
+        return res.status(200).json({message:`Property updated successfully to ${status}`})
+
+    }catch(error){
+        console.error(error);
+        return res.status(500).json({message:"Interval server error"})
+    }
+};
+
+

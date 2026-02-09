@@ -68,3 +68,7 @@ npm run dev
 - **API base paths** (from `src/index.ts`):
   - `GET/POST ... ${API_VERSION}/user/...`
   - `GET/POST ... ${API_VERSION}/property/...`
+
+### Property
+
+Broker can add a property with images, can update property (cant edit media) and can add more media or delete media to exisiting property.

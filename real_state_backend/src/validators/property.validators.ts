@@ -73,6 +73,10 @@ export const addMediaSchema = z.object({
             mediaType: z.enum(MediaTypeEnum),
         })
     ).min(1),
+});
+
+export const changeStatus = z.object({
+    status: z.enum(StatusEnum)
 })
 
 
