@@ -92,10 +92,10 @@ export async function signin(req: Request, res: Response) {
             where: { email }
         })
         if (!user) {
-            return res.status(401).json({ message: "User not found. Please signup" })
+            return res.status(401).json({ message: "Invalid email or password" })
         }
         //check password
-        const isValid = await comparePassword(user.password);
+        const isValid = await comparePassword(password,user.password);
         if (!isValid) {
             return res.status(401).json({ error: "Invalid credentials" });
         }
