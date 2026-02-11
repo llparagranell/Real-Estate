@@ -112,3 +112,70 @@ export async function createPresignedUpload({ fileName, contentType, purpose, us
         expiresIn,
     };
 }
+
+type DirectUploadInput = {
+    fileBuffer: Buffer;
+    fileName: string;
+    contentType: string;
+    purpose: UploadPurpose;
+    userId?: string;
+};
+
+type DirectUploadOutput = {
+    key: string;
+    fileUrl: string;
+    bucket: string;
+    size: number;
+};
+
+export async function uploadFileToS3({
+    fileBuffer,
+    fileName,
+    contentType,
+    purpose,
+    userId,
+}: DirectUploadInput): Promise<DirectUploadOutput> {
+    const region = process.env.AWS_REGION;
+    const bucket = process.env.AWS_S3_BUCKET;
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+
+    if (!region || !bucket || !accessKeyId || !secretAccessKey) {
+        throw new Error("Missing AWS env vars: AWS_REGION, AWS_S3_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY");
+    }
+
+    assertAllowedContentType(purpose, contentType);
+
+    const ext = getFileExtension(fileName, contentType);
+    const owner = userId ?? "guest";
+    const key = `${purposeFolder(purpose)}/${owner}/${Date.now()}-${randomUUID()}.${ext}`;
+
+    const s3 = new S3Client({
+        region,
+        credentials: {
+            accessKeyId,
+            secretAccessKey,
+        },
+    });
+
+    const command = new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        ContentType: contentType,
+        Body: fileBuffer,
+    });
+
+    await s3.send(command);
+
+    const baseUrl =
+        process.env.S3_PUBLIC_BASE_URL?.replace(/\/+$/, "") ??
+        `https://${bucket}.s3.${region}.amazonaws.com`;
+    const fileUrl = `${baseUrl}/${encodeS3KeyPath(key)}`;
+
+    return {
+        key,
+        fileUrl,
+        bucket,
+        size: fileBuffer.length,
+    };
+}
