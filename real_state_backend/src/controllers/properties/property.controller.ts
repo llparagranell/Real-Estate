@@ -1,6 +1,6 @@
 import { prisma } from "../../config/prisma";
 import { Request, Response } from "express";
-import { addMediaSchema, addPropertySchema, updatePropertySchema } from "../../validators/property.validators";
+import { addMediaInput, addPropertySchema, updatePropertySchema } from "../../validators/property.validators";
 import z from "zod";
 
 type Params = {
@@ -173,9 +173,8 @@ export async function addMedia(req: Request<Params>, res: Response) {
         if (!req.user?.id) {
             return res.status(401).json({ message: "Unauthorized" });
         }
-        type AddMediaInput = z.infer<typeof addMediaSchema>;
         const { id: propertyId } = req.params;
-        const { media } = req.body as AddMediaInput;
+        const { media } = req.body as addMediaInput;
         const property = await prisma.property.findFirst({
             where: {
                 id: propertyId,
@@ -243,7 +242,8 @@ export async function deleteMedia(req: Request<Params>, res: Response) {
 
         const propertyId = media.property.id;
 
-        await prisma.$transaction(async (tx) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await prisma.$transaction(async (tx: any) => {
             await tx.propertyMedia.delete({
                 where: { id: id },
             });

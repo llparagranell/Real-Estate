@@ -63,22 +63,105 @@ enum SizeUnit {
   SQMT
 }
 
+enum Category {
+  Residential
+  Commercial
+  FarmLand
+}
+
+enum FurnishingStatus {
+  FullyFurnished
+  SemiFurnished
+  Unfurnished
+  FencedWired
+  FertileLand
+  OpenLand
+  Cultivated
+}
+
+enum AvailabilityStatus {
+  ReadyToMove
+  UnderConstruction
+}
+
+enum AgeOfProperty {
+  ZeroToOne
+  OneToThree
+  ThreeToSix
+  SixToTen
+  TenPlus
+}
+
+enum CarpetAreaUnit {
+  SQFT
+  SQM
+  ACRES
+}
+
+enum PropertyFacing {
+  East
+  West
+  North
+  South
+  NorthEast
+  NorthWest
+  SouthEast
+  SouthWest
+}
+
 model Property {
   id           String         @id @default(cuid())
   title        String
   description  String?
   propertyType PropertyType
   status       PropertyStatus @default(ACTIVE)
-  priceMin     Float
-  priceMax     Float? //for price range
+  
+  // Price - Updated
+  listingPrice Float
+  priceMin     Float? // Deprecated but kept for backward compatibility
+  priceMax     Float? // Deprecated but kept for backward compatibility
+  
+  // Location
   state        String
   city         String
-  area         String
+  locality     String? // Main locality (e.g., "Arera Colony")
+  subLocality  String? // Society/Building name
+  flatNo       String? // Flat/House number
+  area         String // Keep for backward compatibility
   address      String
   latitude     Float
   longitude    Float
-  size         Float?
-  sizeUnit     SizeUnit
+  
+  // Size - Updated
+  carpetArea     Float?
+  carpetAreaUnit CarpetAreaUnit?
+  size           Float? // Deprecated but kept for backward compatibility
+  sizeUnit       SizeUnit? // Deprecated but kept for backward compatibility
+  
+  // Basic Details - New
+  category            Category?
+  furnishingStatus    FurnishingStatus?
+  availabilityStatus  AvailabilityStatus?
+  ageOfProperty       AgeOfProperty?
+  
+  // Property Details - New
+  numberOfRooms      Int?
+  numberOfBathrooms  Int?
+  numberOfBalcony    Int?
+  numberOfFloors     Int?
+  propertyFloor      String?
+  
+  // Price Details - New
+  allInclusivePrice      Boolean @default(false)
+  negotiablePrice        Boolean @default(false)
+  govtChargesTaxIncluded Boolean @default(false)
+  
+  // Other Details - New
+  propertyFacing      PropertyFacing?
+  amenities           String[] // Array of amenities
+  locationAdvantages  String[] // Array of location advantages
+  coveredParking      Int      @default(0)
+  uncoveredParking    Int      @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -92,7 +175,7 @@ model Property {
   @@index([propertyType])
   @@index([status])
   @@index([state, city])
-  @@index([priceMin])
+  @@index([listingPrice])
   @@map("properties")
 }
 
