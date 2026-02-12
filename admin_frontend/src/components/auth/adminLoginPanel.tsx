@@ -2,11 +2,15 @@ import { LoginCard } from "./loginCard";
 import Image from "next/image";
 export const AdminLoginPanel = () => {
     return (
-        <div className="border-2 grid grid-rows-3">
-            <div>Hello real bro</div>
-            <LoginCard />
+        <div className=" grid grid-rows-[auto_1fr_auto] min-h-screen">
+            <div className="flex h-60 my-5 justify-center items-center">
+                <Image src={"/realBroLogo.svg"} alt="real bro logo" width={140} height={100} />
+            </div>
+            <div className="">
+                <LoginCard />
+            </div>
             <div className="flex justify-end">
-                <Image src={"/authPageBuildingIcon.svg"} alt="auth page building icon" width={190} height={500} />
+                <Image src={"/authPageBuildingIcon.svg"} alt="auth page building icon" width={200} height={500} />
             </div>
         </div>
     );
