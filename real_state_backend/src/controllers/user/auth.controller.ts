@@ -77,8 +77,26 @@ export async function signup(req: Request, res: Response) {
             }
         });
         return res.json({ accessToken, refreshToken, user })
-    } catch (error) {
-        return res.status(500).json(error)
+    } catch (error: any) {
+        console.error("Signup error:", error);
+        
+        // Handle Prisma unique constraint violations
+        if (error.code === 'P2002') {
+            const field = error.meta?.target?.[0];
+            if (field === 'email') {
+                return res.status(400).json({
+                    error: "Email already registered",
+                    field: "email"
+                });
+            }
+            // Note: Phone is no longer unique, so this won't trigger for phone
+            return res.status(400).json({
+                error: "This information is already registered",
+                field: field
+            });
+        }
+        
+        return res.status(500).json({ error: "Internal server error" });
     }
 }
 // save refreshToken in localstoragen or session

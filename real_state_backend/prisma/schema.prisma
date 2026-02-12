@@ -17,7 +17,7 @@ model User {
   firstName    String
   lastName     String
   email        String  @unique
-  phone        String  @unique
+  phone        String  // Removed @unique to allow duplicate phone numbers
   password     String
   avatar       String?
   isBlocked    Boolean @default(false)
