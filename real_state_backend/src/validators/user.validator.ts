@@ -11,6 +11,8 @@ export const signupSchema = z.object({
     password: z.string().min(6, "password must be atleast 6 characters long"),
     age: z.number().int().min(18, "Age must be at least 18").max(120, "Invalid age"),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]),
+    avatar: z.string().url("Invalid avatar URL").optional(),
+    avatarKey: z.string().optional(),
     referrerId: z.string().optional(),
     // Aadhar Section
     aadharNo: z.string().regex(/^\d{12}$/, "Aadhar must be 12 digits"),
@@ -23,7 +25,7 @@ export const signupSchema = z.object({
 });
 
 export const signinSchema = z.object({
-    email: z.email("invalid email"),
+    identifier: z.string().min(1, "Email or phone is required"),
     password: z.string()
 });
 

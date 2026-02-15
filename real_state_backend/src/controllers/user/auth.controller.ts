@@ -15,7 +15,7 @@ export async function signup(req: Request, res: Response) {
     }
     try {
         const {
-            firstName, lastName, email, phone, password, age, gender, referrerId,
+            firstName, lastName, email, phone, password, age, gender, avatar, avatarKey, referrerId,
             aadharNo, kycAadharImageUrl, kycAadharImageKey,
             panNo, kycPanImageUrl, kycPanImageKey
         } = req.body;
@@ -46,6 +46,8 @@ export async function signup(req: Request, res: Response) {
                 password: await hashPassword(password),
                 age,
                 gender,
+                avatar,
+                avatarKey,
                 referralCode: userReferralCode,
                 referrerId: referrer?.id,
                 kyc: {
@@ -91,7 +93,12 @@ export async function signup(req: Request, res: Response) {
                     field: "email"
                 });
             }
-            // Note: Phone is no longer unique, so this won't trigger for phone
+            if (field === 'phone') {
+                return res.status(400).json({
+                    error: "Phone number already registered",
+                    field: "phone"
+                });
+            }
             return res.status(400).json({
                 error: "This information is already registered",
                 field: field
@@ -104,15 +111,17 @@ export async function signup(req: Request, res: Response) {
 // save refreshToken in localstoragen or session
 export async function signin(req: Request, res: Response) {
     try {
-        const { email, password } = req.body;
+        const { identifier, password } = req.body;
         if (!req.body) {
-            return res.status(400).json("Please fill valid email to proceed")
+            return res.status(400).json("Please fill valid credentials to proceed")
         }
+        // Check if identifier is email or phone
+        const isEmail = identifier.includes('@');
         const user = await prisma.user.findUnique({
-            where: { email }
+            where: isEmail ? { email: identifier } : { phone: identifier }
         })
         if (!user) {
-            return res.status(401).json({ message: "Invalid email or password" })
+            return res.status(401).json({ message: "Invalid credentials" })
         }
         //check password
         const isValid = await comparePassword(password,user.password);
