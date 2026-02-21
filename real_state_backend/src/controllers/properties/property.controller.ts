@@ -85,6 +85,77 @@ export async function addDraftProperty(req: Request, res: Response) {
     }
 }
 
+export async function updateDraftProperty(req: Request<Params>, res: Response) {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized User" });
+        }
+        
+        const { id } = req.params;
+        type AddDraftPropertyInput = z.infer<typeof addDraftPropertySchema>;
+        const body = req.body as AddDraftPropertyInput;
+        const { media, ...propertyData } = body;
+        
+        // Check if property exists and belongs to user
+        const existingProperty = await prisma.property.findFirst({
+            where: {
+                id,
+                userId,
+            },
+        });
+        
+        if (!existingProperty) {
+            return res.status(404).json({ 
+                message: "Property not found or not owned by user" 
+            });
+        }
+        
+        // Update property and keep status as DRAFT
+        const property = await prisma.property.update({
+            where: { id },
+            data: {
+                ...propertyData,
+                status: "DRAFT", // Ensure it stays as DRAFT
+            },
+            include: {
+                media: true
+            },
+        });
+        
+        // Handle media updates if provided
+        if (media && media.length > 0) {
+            // Delete existing media and add new ones
+            await prisma.propertyMedia.deleteMany({
+                where: { propertyId: id }
+            });
+            
+            await prisma.propertyMedia.createMany({
+                data: media.map((m, index) => ({
+                    ...m,
+                    propertyId: id,
+                    order: m.order ?? index
+                })),
+            });
+        }
+        
+        // Fetch updated property with media
+        const updatedProperty = await prisma.property.findUnique({
+            where: { id },
+            include: { media: true }
+        });
+        
+        return res.status(200).json({
+            success: true,
+            data: updatedProperty,
+            message: "Draft property updated successfully"
+        });
+    } catch (error) {
+        console.error("Update draft property error", error);
+        return res.status(500).json({ message: "Internal server Error" })
+    }
+}
+
 export async function deleteProperty(req: Request<Params>, res: Response) {
     try {
         const { id } = req.params;
