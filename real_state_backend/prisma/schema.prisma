@@ -40,6 +40,7 @@ model User {
   otps          Otp[]
   refreshTokens RefreshToken[]
   supportTickets CustomerSupport[]
+  savedProperties SavedProperty[]
 
   @@index([id, email])
   @@map("users")
@@ -176,6 +177,7 @@ model Property {
   userId String
   user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   media  PropertyMedia[]
+  savedBy SavedProperty[]
 
   @@index([userId])
   @@index([propertyType])
@@ -303,4 +305,20 @@ model CustomerSupport {
   @@index([userId])
   @@index([ticketStatus])
   @@map("customer_support")
+}
+
+// Saved Properties (User wishlist/bookmarks)
+
+model SavedProperty {
+  id         String   @id @default(cuid())
+  userId     String
+  propertyId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, propertyId]) // Prevent duplicate saves
+  @@index([userId])
+  @@index([propertyId])
+  @@map("saved_properties")
 }
