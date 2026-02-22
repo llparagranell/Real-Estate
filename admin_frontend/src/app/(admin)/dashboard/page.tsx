@@ -1,7 +1,11 @@
+import { AnalyticsCards } from "@/components/dashboard/analyticsCards";
+
 export default function Dashboard() {
     return (
-        <div>
-            <h1></h1>
+        <div className="">
+            <div className="">
+                <AnalyticsCards />
+            </div>
         </div>
     );
 }
