@@ -23,8 +23,6 @@ const PORT = process.env.PORT || 5000;
 const server = createServer(app);
 
 // ─── Swagger Docs ────────────────────────────────────────
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 const swaggerYaml = readFileSync(join(__dirname, "../docs/openapi.yaml"), "utf8");
 
 const swaggerDocument = parse(swaggerYaml);
