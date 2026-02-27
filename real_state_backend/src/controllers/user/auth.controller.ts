@@ -22,7 +22,16 @@ export async function signup(req: Request, res: Response) {
         if (!req.body) {
             return res.status(404).json("Please fill all the details")
         }
-        //check if referral code is valid
+        
+        // Check if referrerId is provided
+        if (!referrerId) {
+            return res.status(400).json({
+                error: "Referrer ID is required",
+                field: "referrerId"
+            });
+        }
+        
+        // Check if referral code is valid
         const referrer = await prisma.user.findUnique({
             where: { referralCode: referrerId }
         });
@@ -32,6 +41,7 @@ export async function signup(req: Request, res: Response) {
                 field: "referrerId"
             });
         }
+        
         let userReferralCode = generateReferralCode(firstName);
         // create user
         const user = await prisma.user.create({
@@ -46,7 +56,7 @@ export async function signup(req: Request, res: Response) {
                 avatar,
                 avatarKey,
                 referralCode: userReferralCode,
-                referrerId: referrer?.id,
+                referrerId: referrer.id,
                 kyc: {
                     create: [
                         {
