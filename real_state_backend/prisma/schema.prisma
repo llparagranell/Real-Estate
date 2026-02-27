@@ -71,9 +71,9 @@ enum SizeUnit {
 }
 
 enum Category {
-  Residential
-  Commercial
-  FarmLand
+  RESIDENTIAL
+  COMMERCIAL
+  AGRICULTURAL
 }
 
 enum FurnishingStatus {
@@ -140,11 +140,12 @@ model Property {
   longitude    Float?
   
   // Size - Updated
-  carpetArea     Float?
-  carpetAreaUnit CarpetAreaUnit?
-  plotLandArea   Float?
-  size           Float? // Deprecated but kept for backward compatibility
-  sizeUnit       SizeUnit? // Deprecated but kept for backward compatibility
+  carpetArea         Float?
+  carpetAreaUnit     CarpetAreaUnit?
+  plotLandArea       Float?
+  plotLandAreaUnit   CarpetAreaUnit?
+  size               Float? // Deprecated but kept for backward compatibility
+  sizeUnit           SizeUnit? // Deprecated but kept for backward compatibility
   
   // Basic Details - New
   category            Category?

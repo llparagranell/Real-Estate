@@ -24,9 +24,9 @@ export const sizeUnitEnum = [
 ] as const;
 
 export const categoryEnum = [
-    "Residential",
-    "Commercial",
-    "FarmLand"
+    "RESIDENTIAL",
+    "COMMERCIAL",
+    "AGRICULTURAL"
 ] as const;
 
 export const furnishingStatusEnum = [
@@ -102,6 +102,8 @@ export const addPropertySchema = z.object({
     // Size - Updated
     carpetArea: z.number().positive().optional(),
     carpetAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
+    plotLandArea: z.number().positive().optional(),
+    plotLandAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
     
     // Basic Details - New
     category: z.enum(categoryEnum).optional(),
@@ -210,6 +212,8 @@ export const updatePropertySchema = z.object({
     // Size
     carpetArea: z.number().positive().optional(),
     carpetAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
+    plotLandArea: z.number().positive().optional(),
+    plotLandAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
     
     // Basic Details
     category: z.enum(categoryEnum).optional(),
