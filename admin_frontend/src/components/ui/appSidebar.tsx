@@ -26,6 +26,7 @@ import {
     Crown,
     BarChart2,
     Home,
+    LucideTickets,
 } from "lucide-react"
 
 import {
@@ -58,6 +59,7 @@ const items = [
     { title: "Requirement Board", url: "requirement-board", icon: ClipboardList },
     { title: "Financials", url: "/financials", icon: WalletIcon },
     { title: "Banner Management", url: "/banner-management", icon: Image },
+    { title: "Support Tickets", url: "/support-tickets", icon: LucideTickets },
     { title: "Role Management", url: "/role-management", icon: UserCog },
 ]
 
