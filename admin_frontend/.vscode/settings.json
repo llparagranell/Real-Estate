@@ -6,6 +6,7 @@
   "tailwindCSS.includeLanguages": {
     "typescript": "javascript",
     "typescriptreact": "javascript"
-  }
+  },
+  "discord.enabled": true
 }
 

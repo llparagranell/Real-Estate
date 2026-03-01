@@ -44,7 +44,7 @@ export default function BannerManagementPage() {
 
     return (
         <div className="space-y-10 p-6">
-            <h1 className="text-2xl font-bold">Banner Management</h1>
+            <h1 className="text-xl font-medium">Banner Management</h1>
 
             <BannerSection
                 title="Pending Approval"

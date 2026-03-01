@@ -1,9 +1,9 @@
 "use client"
 
-import { ColumnDef } from "@tanstack/react-table"
-import { Button } from "@/components/ui/button"
-import { Eye, Pencil, Trash2, OctagonMinus,ArrowUpDown } from "lucide-react"
-
+import { ColumnDef } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { Eye, Pencil, Trash2, OctagonMinus,ArrowUpDown } from "lucide-react";
+import Link from "next/link";
 
 export type BlockedUserColumnInterface = {
     username: string
@@ -87,29 +87,25 @@ export const BlockedUsersColumns: ColumnDef<BlockedUserColumnInterface>[] = [
 
             return (
                 <div className="flex items-center gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-blue-600 hover:bg-blue-100"
-                        onClick={() => console.log("View", user)}
+                    <Link
+                        href={`/user/1`}
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-md text-blue-600 hover:bg-blue-100"
                     >
                         <Eye className="size-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-amber-600 hover:bg-amber-100"
-                        onClick={() => console.log("Edit", user)}
+                    </Link>
+                    <Link
+                        href={`/user/edit/1`}
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-md text-blue-600 hover:bg-blue-100"
                     >
                         <Pencil className="size-4" />
-                    </Button>
+                    </Link>
                     <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-orange-600 hover:bg-orange-100"
                         onClick={() => console.log("Block", user)}
                     >
-                        <OctagonMinus className="size-4" />
+                        <OctagonMinus className="size-4"/>
                     </Button>
                     <Button
                         variant="ghost"

@@ -42,8 +42,8 @@ const items = [
         url: "#",
         icon: Building2,
         children: [
-            { title: "All Listings", url: "/properties/all", icon: Home },
-            { title: "Exclusive Approval", url: "/properties/exclusive", icon:Crown },
+            { title: "All Listings", url: "/properties/all-listings", icon: Home },
+            { title: "Exclusive Listings", url: "/properties/exclusive-listings", icon:Crown },
         ],
     },
     {

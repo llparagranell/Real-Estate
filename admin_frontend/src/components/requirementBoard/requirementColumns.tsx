@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { Check, Clock, EyeOff, LocationEditIcon } from "lucide-react"
+import { Check, Clock, EyeOff } from "lucide-react"
 import { ArrowUpDown } from "lucide-react"
 
 export type RequirementBoardTableInterface = {
