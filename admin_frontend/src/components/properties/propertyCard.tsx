@@ -9,7 +9,8 @@ import {
     MapPin,
     BedDouble,
     Bath,
-    Users,
+    Sun,
+    Layers,
     Sofa,
     Heart,
     MoreVertical,
@@ -29,6 +30,7 @@ export interface PropertyCardData {
     bedrooms: number
     bathrooms: number
     balconies: number
+    floors: number
     furnishing: string
     status: "Active" | "Sold" | "Unlisted" | "Pending"
     imageUrl: string
@@ -123,7 +125,7 @@ export function PropertyCard({ property, variant = "default", onEdit, onBuy, onM
 
                 <div className="flex items-center justify-between">
                     <p className="font-bold text-base">₹ {property.price}</p>
-                    <div className="flex items-center gap-3 text-gray-500 text-[11px]">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-gray-500 text-[11px]">
                         <span className="flex items-center gap-1">
                             <BedDouble className="size-3.5" />
                             {property.bedrooms}
@@ -133,8 +135,12 @@ export function PropertyCard({ property, variant = "default", onEdit, onBuy, onM
                             {property.bathrooms}
                         </span>
                         <span className="flex items-center gap-1">
-                            <Users className="size-3.5" />
+                            <Sun className="size-3.5" />
                             {property.balconies}
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <Layers className="size-3.5" />
+                            {property.floors}
                         </span>
                     </div>
                 </div>
