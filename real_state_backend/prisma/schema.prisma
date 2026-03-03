@@ -12,6 +12,44 @@ datasource db {
   provider = "postgresql"
 }
 
+model SuperAdmin {
+  id        String   @id @default(cuid())
+  firstName String?
+  lastName  String?
+  email     String   @unique
+  password  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("super_admins")
+}
+
+enum StaffRole {
+  ADMIN
+  VIEWER
+  CUSTOMER_SUPPORT
+}
+
+model Staff {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  phone     String?   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      StaffRole
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([role])
+  @@index([isActive])
+  @@index([email])
+  @@map("staff")
+}
+
 model User {
   id           String  @id @default(cuid())
   firstName    String
@@ -33,15 +71,15 @@ model User {
   //verification
   isEmailVerified Boolean @default(false)
 
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  kyc           Kyc[]
-  properties    Property[]
-  otps          Otp[]
-  refreshTokens RefreshToken[]
-  supportTickets CustomerSupport[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  kyc             Kyc[]
+  properties      Property[]
+  otps            Otp[]
+  refreshTokens   RefreshToken[]
+  supportTickets  CustomerSupport[]
   savedProperties SavedProperty[]
-  appointments  Appointment[]
+  appointments    Appointment[]
 
   @@index([id, email])
   @@map("users")
@@ -123,64 +161,64 @@ model Property {
   description  String?
   propertyType PropertyType?
   status       PropertyStatus @default(ACTIVE)
-  
+
   // Price - Updated
   listingPrice Float?
   priceMin     Float? // Deprecated but kept for backward compatibility
   priceMax     Float? // Deprecated but kept for backward compatibility
-  
+
   // Location
-  state        String?
-  city         String?
-  locality     String? // Main locality (e.g., "Arera Colony")
-  subLocality  String? // Society/Building name
-  flatNo       String? // Flat/House number
-  area         String? // Keep for backward compatibility
-  address      String?
-  latitude     Float?
-  longitude    Float?
-  
+  state       String?
+  city        String?
+  locality    String? // Main locality (e.g., "Arera Colony")
+  subLocality String? // Society/Building name
+  flatNo      String? // Flat/House number
+  area        String? // Keep for backward compatibility
+  address     String?
+  latitude    Float?
+  longitude   Float?
+
   // Size - Updated
-  carpetArea         Float?
-  carpetAreaUnit     CarpetAreaUnit?
-  plotLandArea       Float?
-  plotLandAreaUnit   CarpetAreaUnit?
-  size               Float? // Deprecated but kept for backward compatibility
-  sizeUnit           SizeUnit? // Deprecated but kept for backward compatibility
-  
+  carpetArea       Float?
+  carpetAreaUnit   CarpetAreaUnit?
+  plotLandArea     Float?
+  plotLandAreaUnit CarpetAreaUnit?
+  size             Float? // Deprecated but kept for backward compatibility
+  sizeUnit         SizeUnit? // Deprecated but kept for backward compatibility
+
   // Basic Details - New
-  category            Category?
-  furnishingStatus    FurnishingStatus?
-  availabilityStatus  AvailabilityStatus?
-  ageOfProperty       AgeOfProperty?
-  
+  category           Category?
+  furnishingStatus   FurnishingStatus?
+  availabilityStatus AvailabilityStatus?
+  ageOfProperty      AgeOfProperty?
+
   // Property Details - New
-  numberOfRooms      Int?
-  numberOfBathrooms  Int?
-  numberOfBalcony    Int?
-  numberOfFloors     Int?
-  propertyFloor      String?
-  
+  numberOfRooms     Int?
+  numberOfBathrooms Int?
+  numberOfBalcony   Int?
+  numberOfFloors    Int?
+  propertyFloor     String?
+
   // Price Details - New
   allInclusivePrice      Boolean @default(false)
   negotiablePrice        Boolean @default(false)
   govtChargesTaxIncluded Boolean @default(false)
-  
+
   // Other Details - New
-  propertyFacing      PropertyFacing?
-  amenities           String[] // Array of amenities
-  locationAdvantages  String[] // Array of location advantages
-  coveredParking      Int      @default(0)
-  uncoveredParking    Int      @default(0)
+  propertyFacing     PropertyFacing?
+  amenities          String[] // Array of amenities
+  locationAdvantages String[] // Array of location advantages
+  coveredParking     Int             @default(0)
+  uncoveredParking   Int             @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   //Relations
-  userId String
-  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  media  PropertyMedia[]
-  savedBy SavedProperty[]
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media        PropertyMedia[]
+  savedBy      SavedProperty[]
   appointments Appointment[]
 
   @@index([userId])
@@ -225,7 +263,7 @@ enum KycStatus {
 }
 
 model Kyc {
-  id              String @id @default(cuid())
+  id              String    @id @default(cuid())
   type            KycType
   status          KycStatus @default(PENDING)
   docNo           String
@@ -298,11 +336,11 @@ model CustomerSupport {
   description      String       @db.Text
   isRequestForCall Boolean      @default(false)
   ticketStatus     TicketStatus @default(OPEN)
-  
+
   // User info
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -336,20 +374,20 @@ enum AppointmentStatus {
 }
 
 model Appointment {
-  id                String            @id @default(cuid())
-  userId            String
-  propertyId        String
-  appointmentDate   DateTime
-  appointmentTime   String // Stored as string (e.g., "10:00 AM", "14:30")
-  status            AppointmentStatus @default(SCHEDULED)
-  notes             String?           @db.Text
-  isPreBooked       Boolean           @default(false) // Whether user has pre-booked this appointment
-  
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  property          Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  userId          String
+  propertyId      String
+  appointmentDate DateTime
+  appointmentTime String // Stored as string (e.g., "10:00 AM", "14:30")
+  status          AppointmentStatus @default(SCHEDULED)
+  notes           String?           @db.Text
+  isPreBooked     Boolean           @default(false) // Whether user has pre-booked this appointment
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([propertyId])
