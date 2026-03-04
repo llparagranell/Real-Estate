@@ -27,6 +27,7 @@ model SuperAdmin {
 }
 
 enum StaffRole {
+  SUPER_ADMIN
   ADMIN
   VIEWER
   CUSTOMER_SUPPORT
@@ -34,11 +35,14 @@ enum StaffRole {
 
 model Staff {
   id        String    @id @default(cuid())
-  email     String    @unique
-  phone     String?   @unique
-  password  String
   firstName String
   lastName  String
+  age       Int?
+  gender    Gender?
+  phone     String?   @unique
+  email     String    @unique
+  password  String
+  passwordHash String?
   role      StaffRole
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now())
