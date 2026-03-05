@@ -342,15 +342,8 @@ export const filterPropertiesSchema = z.object({
 
 // Search Properties Schema
 export const searchPropertiesSchema = z.object({
-    // Search query for title
+    // Search query - searches across title and all location fields
     query: z.string().optional(),
-    
-    // Location search
-    state: z.string().optional(),
-    city: z.string().optional(),
-    locality: z.string().optional(),
-    subLocality: z.string().optional(),
-    area: z.string().optional(),
     
     // Sorting
     sortBy: z.enum(['price_asc', 'price_desc', 'created_desc', 'created_asc']).default('created_desc'),

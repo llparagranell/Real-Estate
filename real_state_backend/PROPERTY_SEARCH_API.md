@@ -12,19 +12,14 @@ GET /api/properties/search
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| query | string | No | Search text to match against property title |
-| state | string | No | Filter by state (case-insensitive, partial match) |
-| city | string | No | Filter by city (case-insensitive, partial match) |
-| locality | string | No | Filter by locality (case-insensitive, partial match) |
-| subLocality | string | No | Filter by sub-locality/society name (case-insensitive, partial match) |
-| area | string | No | Filter by area (case-insensitive, partial match) |
+| query | string | No | Universal search text - searches across title, state, city, locality, subLocality, area, and address (case-insensitive, partial match) |
 | sortBy | enum | No | Sort results: `price_asc`, `price_desc`, `created_desc` (default), `created_asc` |
 | page | number | No | Page number for pagination (default: 1, min: 1) |
 | limit | number | No | Number of results per page (default: 10, min: 1, max: 100) |
 
 ### Features
-- **Title Search**: Searches property titles using the `query` parameter with case-insensitive matching
-- **Location Search**: Flexible location search across multiple fields (state, city, locality, subLocality, area) using OR logic
+- **Universal Search**: Single `query` parameter searches across title AND all location fields (state, city, locality, subLocality, area, address) using OR logic
+- **Smart Matching**: Searches "Bhopal" will find properties with "Bhopal" in title, city, locality, or address
 - **Active Properties Only**: Automatically filters to show only properties with `ACTIVE` status
 - **Pagination**: Built-in pagination support
 - **Sorting**: Sort by price or creation date in ascending/descending order
@@ -33,22 +28,36 @@ GET /api/properties/search
 
 #### Search by title
 ```bash
-GET /api/properties/search?query=Beautiful%20Villa
+GET /api/v1/property/search?query=Villa
 ```
 
-#### Search by location
+#### Search by location (anywhere in address fields)
 ```bash
-GET /api/properties/search?city=Bhopal&locality=Arera%20Colony
+GET /api/v1/property/search?query=Bhopal
+# This will find properties where "Bhopal" appears in city, state, locality, address, etc.
 ```
 
-#### Search by title and location
+#### Search for specific locality
 ```bash
-GET /api/properties/search?query=Apartment&city=Bhopal&sortBy=price_asc
+GET /api/v1/property/search?query=Arera%20Colony
+# This will match properties with "Arera Colony" in locality, subLocality, or address
+```
+
+#### Universal search with sorting
+```bash
+GET /api/v1/property/search?query=Apartment&sortBy=price_asc
+# Finds "Apartment" in any field (title or locations) sorted by price
 ```
 
 #### Search with pagination
 ```bash
-GET /api/properties/search?city=Bhopal&page=2&limit=20
+GET /api/v1/property/search?query=2BHK&page=2&limit=20
+```
+
+#### Get all active properties
+```bash
+GET /api/v1/property/search
+# No query parameter returns all ACTIVE properties
 ```
 
 ### Response Format
@@ -122,15 +131,17 @@ GET /api/properties/search?city=Bhopal&page=2&limit=20
 ```
 
 ### Notes
-- All text searches are case-insensitive
-- Location filters use OR logic, meaning properties matching ANY of the provided location criteria will be returned
-- Title search requires exact substring match
-- The endpoint automatically filters out non-active properties (DRAFT, UNLISTED, SOLDOFFLINE, etc.)
-- Maximum limit per page is 100 items
-- Results include property media and owner information
+- **Universal Search**: The `query` parameter searches across title, state, city, locality, subLocality, area, and address fields
+- **OR Logic**: Matches if the query appears in ANY of the searchable fields (not all)
+- **Case-Insensitive**: All searches ignore case
+- **Partial Matching**: Searches use substring matching (e.g., "Bho" will match "Bhopal")
+- **Active Only**: Automatically filters out non-active properties (DRAFT, UNLISTED, SOLDOFFLINE, etc.)
+- **Pagination**: Maximum limit per page is 100 items
+- **Complete Data**: Results include property media and owner information
 
 ### Use Cases
-1. **Quick Search**: Users can search for properties by typing titles like "Villa", "Apartment", "2BHK"
-2. **Location-based Search**: Find properties in specific cities, localities, or neighborhoods
-3. **Combined Search**: Search for "Luxury Villa" in "Bhopal" sorted by price
-4. **Browse Active Listings**: Get all active properties without any filters
+1. **Smart Search**: Users can search for anything - property titles, locations, localities all in one search box
+2. **Location Discovery**: Search "Bhopal" and get all properties in Bhopal (city, locality, or address)
+3. **Property Type Search**: Search "Villa", "Apartment", "2BHK" to find matching properties
+4. **Combined Search**: Search "Luxury Villa Bhopal" to find properties matching any of these terms
+5. **Browse Active Listings**: Get all active properties without any filters

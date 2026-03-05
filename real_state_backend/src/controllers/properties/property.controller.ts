@@ -631,11 +631,6 @@ export async function searchProperties(req: Request, res: Response) {
         
         const {
             query,
-            state,
-            city,
-            locality,
-            subLocality,
-            area,
             sortBy = 'created_desc',
             page = 1,
             limit = 10,
@@ -646,50 +641,17 @@ export async function searchProperties(req: Request, res: Response) {
             status: 'ACTIVE' // Only show active properties
         };
 
-        // If query parameter is provided, search in title
+        // If query parameter is provided, search across title and all location fields
         if (query && query.trim()) {
-            where.title = { 
-                contains: query.trim(), 
-                mode: 'insensitive' 
-            };
-        }
-
-        // Location filters with OR condition for flexible search
-        const locationFilters: any[] = [];
-        
-        if (state && state.trim()) {
-            locationFilters.push({
-                state: { contains: state.trim(), mode: 'insensitive' }
-            });
-        }
-        
-        if (city && city.trim()) {
-            locationFilters.push({
-                city: { contains: city.trim(), mode: 'insensitive' }
-            });
-        }
-        
-        if (locality && locality.trim()) {
-            locationFilters.push({
-                locality: { contains: locality.trim(), mode: 'insensitive' }
-            });
-        }
-        
-        if (subLocality && subLocality.trim()) {
-            locationFilters.push({
-                subLocality: { contains: subLocality.trim(), mode: 'insensitive' }
-            });
-        }
-        
-        if (area && area.trim()) {
-            locationFilters.push({
-                area: { contains: area.trim(), mode: 'insensitive' }
-            });
-        }
-
-        // If location filters exist, add them with OR condition
-        if (locationFilters.length > 0) {
-            where.OR = locationFilters;
+            where.OR = [
+                { title: { contains: query.trim(), mode: 'insensitive' } },
+                { state: { contains: query.trim(), mode: 'insensitive' } },
+                { city: { contains: query.trim(), mode: 'insensitive' } },
+                { locality: { contains: query.trim(), mode: 'insensitive' } },
+                { subLocality: { contains: query.trim(), mode: 'insensitive' } },
+                { area: { contains: query.trim(), mode: 'insensitive' } },
+                { address: { contains: query.trim(), mode: 'insensitive' } }
+            ];
         }
 
         // Sorting logic
