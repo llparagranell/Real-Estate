@@ -18,6 +18,8 @@ model SuperAdmin {
   lastName  String?
   email     String   @unique
   password  String
+  twoFactorSecret String?
+  isTwoFactorEnabled Boolean @default(false)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -44,6 +46,8 @@ model Staff {
   password  String
   passwordHash String?
   role      StaffRole
+  twoFactorSecret String?
+  isTwoFactorEnabled Boolean @default(false)
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
