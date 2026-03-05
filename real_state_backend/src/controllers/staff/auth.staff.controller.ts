@@ -1,46 +1,135 @@
 import { prisma } from "../../config/prisma";
 import { Request, Response } from "express";
 import { comparePassword } from "../../utils/password";
-import { signAccessToken, signRefreshToken } from "../../utils/jwt";
+import { signAccessToken, signRefreshToken, signStaffChallengeToken, verifyStaffChallengeToken } from "../../utils/jwt";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
+
+type StaffAuthAccount = {
+    id: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+    isTwoFactorEnabled: boolean;
+    twoFactorSecret: string | null;
+    accountType: "SUPER_ADMIN" | "STAFF";
+    passwordHash: string;
+};
+
+async function getAccountByEmail(email: string): Promise<StaffAuthAccount | null> {
+    const [superAdmin, staff] = await Promise.all([
+        prisma.superAdmin.findUnique({ where: { email } }),
+        prisma.staff.findUnique({ where: { email } }),
+    ]);
+
+    if (superAdmin) {
+        return {
+            id: superAdmin.id,
+            email: superAdmin.email,
+            role: "SUPER_ADMIN",
+            isActive: superAdmin.isActive,
+            isTwoFactorEnabled: superAdmin.isTwoFactorEnabled,
+            twoFactorSecret: superAdmin.twoFactorSecret,
+            accountType: "SUPER_ADMIN",
+            passwordHash: superAdmin.passwordHash,
+        };
+    }
+
+    if (staff) {
+        return {
+            id: staff.id,
+            email: staff.email,
+            role: staff.role,
+            isActive: staff.isActive,
+            isTwoFactorEnabled: staff.isTwoFactorEnabled,
+            twoFactorSecret: staff.twoFactorSecret,
+            accountType: "STAFF",
+            passwordHash: staff.passwordHash ?? "",
+        };
+    }
+
+    return null;
+}
+
+async function getAccountByChallenge(challengeToken: string): Promise<StaffAuthAccount | null> {
+    const payload = verifyStaffChallengeToken(challengeToken);
+    if (!payload) {
+        return null;
+    }
+
+    if (payload.accountType === "SUPER_ADMIN") {
+        const superAdmin = await prisma.superAdmin.findUnique({
+            where: { id: payload.id },
+        });
+        if (!superAdmin) {
+            return null;
+        }
+        return {
+            id: superAdmin.id,
+            email: superAdmin.email,
+            role: "SUPER_ADMIN",
+            isActive: superAdmin.isActive,
+            isTwoFactorEnabled: superAdmin.isTwoFactorEnabled,
+            twoFactorSecret: superAdmin.twoFactorSecret,
+            accountType: "SUPER_ADMIN",
+            passwordHash: superAdmin.passwordHash,
+        };
+    }
+
+    const staff = await prisma.staff.findUnique({
+        where: { id: payload.id },
+    });
+    if (!staff) {
+        return null;
+    }
+    return {
+        id: staff.id,
+        email: staff.email,
+        role: staff.role,
+        isActive: staff.isActive,
+        isTwoFactorEnabled: staff.isTwoFactorEnabled,
+        twoFactorSecret: staff.twoFactorSecret,
+        passwordHash: staff.passwordHash ?? "",
+        accountType: "STAFF",
+    };
+}
 
 export async function signin(req: Request, res: Response) {
     try {
         const { email, password } = req.body;
         if (!email || !password) {
             return res.status(400).json({ error: "Email and password are required" });
-        };
-        const [superAdmin, staff] = await Promise.all([
-            prisma.superAdmin.findUnique({
-                where: { email }
-            }),
-            prisma.staff.findUnique({
-                where: { email }
-            })
-        ]);
-        let user: any = null;
-        let role: string = "";
+        }
 
-        if (superAdmin) {
-            user = superAdmin;
-            role = "SUPER_ADMIN";
-        } else if (staff) {
-            user = staff;
-            role = staff.role;
-        } else {
+        const staff = await getAccountByEmail(email);
+        if (!staff) {
             return res.status(401).json({ error: "Invalid credentials" });
         }
-        const isValidPassword = await comparePassword(password, user.password);
+        if (!staff.isActive) {
+            return res.status(403).json({ error: "Account is inactive" });
+        }
+
+        const isValidPassword = await comparePassword(password, staff.passwordHash);
         if (!isValidPassword) {
             return res.status(401).json({ error: "Invalid credentials" });
         }
-        const accessToken = signAccessToken({ id: user.id, role: role });
-        const refreshToken = signRefreshToken({ id: user.id, role: role });
+
+        const has2fa = Boolean(staff.isTwoFactorEnabled && staff.twoFactorSecret);
+        const nextStep = has2fa ? "VERIFY_2FA" : "SETUP_2FA";
+        const challengeToken = signStaffChallengeToken({
+            id: staff.id,
+            role: staff.role,
+            accountType: staff.accountType,
+            step: nextStep,
+        });
+
         return res.status(200).json({
-            accessToken, refreshToken, user: {
-                id: user.id,
-                role: role,
+            nextStep,
+            challengeToken,
+            user: {
+                id: staff.id,
+                role: staff.role,
+                email: staff.email,
             }
         });
     } catch (error) {
@@ -50,50 +139,62 @@ export async function signin(req: Request, res: Response) {
 
 export async function setup2fa(req: Request, res: Response) {
     try {
-        const { email } = req.body;
-        const [superAdmin, staff] = await Promise.all([
-            prisma.superAdmin.findUnique({ where: { email } }),
-            prisma.staff.findUnique({ where: { email } }),
-        ]);
-        if (!superAdmin && !staff) {
-            return res.status(404).json({ error: "Account not found" });
-        };
+        const { challengeToken } = req.body;
+        const challengePayload = verifyStaffChallengeToken(challengeToken);
+        if (!challengePayload || challengePayload.step !== "SETUP_2FA") {
+            return res.status(401).json({ error: "Invalid or expired challenge token" });
+        }
 
-        if ((superAdmin && !superAdmin.isActive) || (staff && !staff.isActive)) {
+        const user = await getAccountByChallenge(challengeToken);
+        if (!user) {
+            return res.status(404).json({ error: "Account not found" });
+        }
+
+        if (!user.isActive) {
             return res.status(403).json({ error: "Account is inactive" });
-        };
+        }
+
         const secret = speakeasy.generateSecret({
-            name: `RealBro (${email})`,
+            name: `RealBro (${user.email})`,
             issuer: "RealBro",
             length: 20,
         });
         if (!secret.otpauth_url || !secret.base32) {
             return res.status(500).json({ error: "Failed to generate 2FA secret" });
-        };
+        }
         const qrCodeDataUrl = await QRCode.toDataURL(secret.otpauth_url);
-        if (superAdmin) {
+
+        if (user.accountType === "SUPER_ADMIN") {
             await prisma.superAdmin.update({
-                where: { id: superAdmin.id },
+                where: { id: user.id },
                 data: {
                     twoFactorSecret: secret.base32,
                     isTwoFactorEnabled: false,
                 },
             });
-        } else if (staff) {
+        } else {
             await prisma.staff.update({
-                where: { id: staff.id },
+                where: { id: user.id },
                 data: {
                     twoFactorSecret: secret.base32,
                     isTwoFactorEnabled: false,
                 },
             });
         }
+        const verifyChallengeToken = signStaffChallengeToken({
+            id: user.id,
+            role: user.role,
+            accountType: user.accountType,
+            step: "VERIFY_2FA",
+        });
+
         return res.status(200).json({
             message: "2FA setup successful",
             data: {
-                email,
+                challengeToken: verifyChallengeToken,
+                email: user.email,
                 qrCodeDataUrl,
-                manualSetupCode: secret.otpauth_url,
+                manualSetupCode: secret.base32,
                 otpauthUrl: secret.otpauth_url,
             },
         });
@@ -105,18 +206,21 @@ export async function setup2fa(req: Request, res: Response) {
 
 export async function confirm2faSetup(req: Request, res: Response) {
     try {
-        const { email, code } = req.body;
-        const [superAdmin, staff] = await Promise.all([
-            prisma.superAdmin.findUnique({ where: { email } }),
-            prisma.staff.findUnique({ where: { email } }),
-        ]);
-        if (!superAdmin && !staff) {
+        const { challengeToken, code } = req.body;
+        const challengePayload = verifyStaffChallengeToken(challengeToken);
+        if (!challengePayload || challengePayload.step !== "VERIFY_2FA") {
+            return res.status(401).json({ error: "Invalid or expired challenge token" });
+        }
+
+        const user = await getAccountByChallenge(challengeToken);
+        if (!user) {
             return res.status(404).json({ error: "Account not found" });
-        };
-        if ((superAdmin && !superAdmin.isActive) || (staff && !staff.isActive)) {
+        }
+        if (!user.isActive) {
             return res.status(403).json({ error: "Account is inactive" });
-        };
-        const secret = superAdmin?.twoFactorSecret ?? staff?.twoFactorSecret;
+        }
+
+        const secret = user.twoFactorSecret;
         if (!secret) {
             return res.status(400).json({ error: "2FA setup not initiated" });
         }
@@ -128,34 +232,29 @@ export async function confirm2faSetup(req: Request, res: Response) {
         });
         if (!isValid) {
             return res.status(400).json({ error: "Invalid 2FA code" });
-        };
-        let userId = "";
-        let role = "";
-        if (superAdmin) {
+        }
+
+        if (user.accountType === "SUPER_ADMIN") {
             await prisma.superAdmin.update({
-                where: { id: superAdmin.id },
+                where: { id: user.id },
                 data: { isTwoFactorEnabled: true },
             });
-            userId = superAdmin.id;
-            role = "SUPER_ADMIN";
-        } else if (staff) {
+        } else {
             await prisma.staff.update({
-                where: { id: staff.id },
+                where: { id: user.id },
                 data: { isTwoFactorEnabled: true },
             });
-            userId = staff.id;
-            role = staff.role;
-        };
-        const accessToken = signAccessToken({ id: userId, role });
-        const refreshToken = signRefreshToken({ id: userId, role });
+        }
+        const accessToken = signAccessToken({ id: user.id, role: user.role });
+        const refreshToken = signRefreshToken({ id: user.id, role: user.role });
 
         return res.status(200).json({
             message: "2FA setup confirmed",
             accessToken,
             refreshToken,
             user: {
-                id: userId,
-                role,
+                id: user.id,
+                role: user.role,
             },
         });
 
@@ -168,25 +267,30 @@ export async function confirm2faSetup(req: Request, res: Response) {
 
 export async function verify2fa(req: Request, res: Response) {
     try {
-        const { email, code } = req.body;
-        const [superAdmin, staff] = await Promise.all([
-            prisma.superAdmin.findUnique({ where: { email } }),
-            prisma.staff.findUnique({ where: { email } }),
-        ]);
-        if (!superAdmin && !staff) {
-            return res.status(404).json({ error: "Account not found" });
-        };
-        if ((superAdmin && !superAdmin.isActive) || (staff && !staff.isActive)) {
-            return res.status(403).json({ error: "Account is inactive" });
-        };
-        let secret = "";
-        if (superAdmin) {
-            secret = superAdmin.twoFactorSecret!;
-        } else if (staff) {
-            secret = staff.twoFactorSecret!;
+        const { challengeToken, code } = req.body;
+        const challengePayload = verifyStaffChallengeToken(challengeToken);
+        if (!challengePayload || challengePayload.step !== "VERIFY_2FA") {
+            return res.status(401).json({ error: "Invalid or expired challenge token" });
         }
+
+        const user = await getAccountByChallenge(challengeToken);
+        if (!user) {
+            return res.status(404).json({ error: "Account not found" });
+        }
+        if (!user.isActive) {
+            return res.status(403).json({ error: "Account is inactive" });
+        }
+        if (!user.isTwoFactorEnabled) {
+            return res.status(400).json({ error: "2FA not enabled. Complete setup first." });
+        }
+
+        const secret = user.twoFactorSecret;
+        if (!secret) {
+            return res.status(400).json({ error: "2FA is not setup for this account" });
+        }
+
         const isValid = speakeasy.totp.verify({
-            secret: secret,
+            secret,
             encoding: "base32",
             token: code,
             window: 1,
@@ -194,19 +298,18 @@ export async function verify2fa(req: Request, res: Response) {
         if (!isValid) {
             return res.status(400).json({ error: "Invalid 2FA code" });
         }
-        if (superAdmin) {
-            await prisma.superAdmin.update({
-                where: { id: superAdmin.id },
-                data: { isTwoFactorEnabled: true },
-            });
-        } else if (staff) {
-            await prisma.staff.update({
-                where: { id: staff.id },
-                data: { isTwoFactorEnabled: true },
-            });
-        }
+
+        const accessToken = signAccessToken({ id: user.id, role: user.role });
+        const refreshToken = signRefreshToken({ id: user.id, role: user.role });
+
         return res.status(200).json({
             message: "2FA verification successful",
+            accessToken,
+            refreshToken,
+            user: {
+                id: user.id,
+                role: user.role,
+            },
         });
     }
     catch (error) {

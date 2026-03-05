@@ -21,8 +21,7 @@ export async function createStaff(req: Request, res: Response) {
                 phone,
                 email,
                 role,
-                password,
-                passwordHash,
+                passwordHash
             },
         });
         return res.status(201).json({ message: "Staff created successfully" });

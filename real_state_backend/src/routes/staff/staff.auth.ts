@@ -1,12 +1,14 @@
 import express from "express";
 import { signin, setup2fa, confirm2faSetup, verify2fa, signout } from "../../controllers/staff/auth.staff.controller";
+import { validate } from "../../middleware/validate";
+import { setup2faSchema, signoutStaffSchema, staffSigninSchema, verify2faSchema } from "../../validators/staff.validator";
 
 const router = express.Router();
 
-router.post('/signin', signin);
-router.post('/setup2fa', setup2fa);
-router.post('/confirm2faSetup', confirm2faSetup);
-router.post('/verify2fa', verify2fa);
-router.post('/signout', signout);
+router.post('/signin', validate(staffSigninSchema), signin);
+router.post('/setup2fa', validate(setup2faSchema), setup2fa);
+router.post('/confirm2faSetup', validate(verify2faSchema), confirm2faSetup);
+router.post('/verify2fa', validate(verify2faSchema), verify2fa);
+router.post('/signout', validate(signoutStaffSchema), signout);
 
 export default router;

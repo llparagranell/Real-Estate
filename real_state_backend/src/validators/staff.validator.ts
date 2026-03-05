@@ -12,3 +12,21 @@ export const createStaffSchema = z.object({
 });
 
 export type createStaffInput = z.infer<typeof createStaffSchema>;
+
+export const staffSigninSchema = z.object({
+    email: z.email("Invalid email"),
+    password: z.string().min(1, "Password is required"),
+});
+
+export const setup2faSchema = z.object({
+    challengeToken: z.string().min(1, "challengeToken is required"),
+});
+
+export const verify2faSchema = z.object({
+    challengeToken: z.string().min(1, "challengeToken is required"),
+    code: z.string().length(6, "2FA code must be 6 digits"),
+});
+
+export const signoutStaffSchema = z.object({
+    refreshToken: z.string().min(1, "Refresh token is required"),
+});

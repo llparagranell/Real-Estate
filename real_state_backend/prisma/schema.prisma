@@ -17,7 +17,7 @@ model SuperAdmin {
   firstName String?
   lastName  String?
   email     String   @unique
-  password  String
+  passwordHash  String
   twoFactorSecret String?
   isTwoFactorEnabled Boolean @default(false)
   isActive  Boolean  @default(true)
@@ -43,7 +43,6 @@ model Staff {
   gender    Gender?
   phone     String?   @unique
   email     String    @unique
-  password  String
   passwordHash String?
   role      StaffRole
   twoFactorSecret String?

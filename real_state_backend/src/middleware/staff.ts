@@ -27,5 +27,5 @@ export function requireStaffRole(...allowedRoles: StaffRole[]) {
 
 export const requireSuperAdmin = requireStaffRole("SUPER_ADMIN");
 export const requireAdminOrSuperAdmin = requireStaffRole("SUPER_ADMIN", "ADMIN");
-export const requireViewerOrAbove = requireStaffRole("SUPER_ADMIN", "ADMIN", "VIEWER");
+export const requireViewerOrAbove = requireStaffRole("SUPER_ADMIN", "ADMIN","CUSTOMER_SUPPORT", "VIEWER");
 export const requireSupportOrAbove = requireStaffRole("SUPER_ADMIN", "ADMIN", "CUSTOMER_SUPPORT");

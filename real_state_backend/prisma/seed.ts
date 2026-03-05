@@ -5,6 +5,24 @@ import { generateReferralCode } from '../src/utils/generateReferralCode.js';
 async function main() {
   console.log('🌱 Seeding database...');
 
+  // create super admin
+  const superAdminEmail = "owner@realbro.com";
+  const superAdminPassword = "Owner@123";
+  const superAdmin = await prisma.superAdmin.upsert({
+    where: { email: superAdminEmail },
+    update: {
+      isActive: true,
+    },
+    create: {
+      firstName: "Super",
+      lastName: "Admin",
+      email: superAdminEmail,
+      passwordHash: await hashPassword(superAdminPassword),
+      isActive: true,
+      isTwoFactorEnabled: false,
+    },
+  });
+
   // Check if first user already exists
   const existingUser = await prisma.user.findFirst({
     where: {
@@ -30,23 +48,6 @@ async function main() {
       isEmailVerified: true,
       points: 0,
     }
-  });
-  // create super admin
-  const superAdminEmail = "owner@realbro.com";
-  const superAdminPassword = "Owner@123";
-  const superAdmin = await prisma.superAdmin.upsert({
-    where: { email: superAdminEmail },
-    update: {
-      isActive: true,
-    },
-    create: {
-      firstName: "Super",
-      lastName: "Admin",
-      email: superAdminEmail,
-      password: await hashPassword(superAdminPassword),
-      isActive: true,
-      isTwoFactorEnabled: false,
-    },
   });
 
   console.log('✅ First user created successfully!');
