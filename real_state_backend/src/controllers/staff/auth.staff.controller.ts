@@ -248,10 +248,19 @@ export async function confirm2faSetup(req: Request, res: Response) {
         const accessToken = signAccessToken({ id: user.id, role: user.role });
         const refreshToken = signRefreshToken({ id: user.id, role: user.role });
 
+        const isProd = process.env.NODE_ENV === "production";
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: "lax" as const,
+            path: "/",
+        };
+
+        res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 30 * 60 * 1000 }); // 15 min
+        res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7 days
+
         return res.status(200).json({
             message: "2FA setup confirmed",
-            accessToken,
-            refreshToken,
             user: {
                 id: user.id,
                 role: user.role,
@@ -302,10 +311,20 @@ export async function verify2fa(req: Request, res: Response) {
         const accessToken = signAccessToken({ id: user.id, role: user.role });
         const refreshToken = signRefreshToken({ id: user.id, role: user.role });
 
+        const isProd = process.env.NODE_ENV === "production";
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: "lax" as const,
+            path: "/",
+        };
+
+        res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 30 * 60 * 1000 }); // 15 min
+        res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7 days
+        res.cookie("role", user.role, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7 days
+
         return res.status(200).json({
             message: "2FA verification successful",
-            accessToken,
-            refreshToken,
             user: {
                 id: user.id,
                 role: user.role,
@@ -320,13 +339,22 @@ export async function verify2fa(req: Request, res: Response) {
 
 export async function signout(req: Request, res: Response) {
     try {
-        const { refreshToken } = req.body;
-        if (!refreshToken) {
-            return res.status(401).json({ error: "Refresh Token not found" });
+        // Read refreshToken from cookie (httpOnly) or body (backward compatibility)
+        const refreshToken = req.cookies?.refreshToken ?? req.body?.refreshToken;
+        if (refreshToken) {
+            await prisma.refreshToken.deleteMany({
+                where: { token: refreshToken }
+            });
         }
-        await prisma.refreshToken.deleteMany({
-            where: { token: refreshToken }
-        });
+        // Clear auth cookies
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax" as const,
+            path: "/",
+        };
+        res.clearCookie("accessToken", cookieOptions);
+        res.clearCookie("refreshToken", cookieOptions);
         return res.status(200).json({ message: "Logged out successfully" });
     } catch (error) {
         console.error("signout error:", error);

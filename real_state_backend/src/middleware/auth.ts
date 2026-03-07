@@ -11,16 +11,22 @@ declare global {
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction){
     try{
-        const authHeader = req.headers.authorization;
-        if(!authHeader || !authHeader.startsWith('Bearer ')){
-            res.status(401).json({error: 'No token provided'});
+        // Try cookie first (httpOnly), then Authorization header (backward compatibility)
+        let token: string | undefined = req.cookies?.accessToken;
+        if (!token) {
+            const authHeader = req.headers.authorization;
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.split(' ')[1];
+            }
+        }
+        if (!token) {
+            res.status(401).json({ error: 'No token provided' });
             return;
         }
-        const token = authHeader.split(' ')[1];
         const payload = verifyAccessToken(token);
         req.user = payload;
-        next()
-    }catch(err){
-        return res.status(401).json({ error: "Invalid or expired token"});
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: "Invalid or expired token" });
     }
 }
