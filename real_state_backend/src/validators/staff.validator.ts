@@ -37,7 +37,7 @@ export const verify2faSchema = z.object({
 });
 
 export const signoutStaffSchema = z.object({
-    refreshToken: z.string().min(1, "Refresh token is required"),
+    refreshToken: z.string().optional(), // Optional when using httpOnly cookies
 });
 
 export type createStaffInput = z.infer<typeof createStaffSchema>;

@@ -54,7 +54,7 @@ export const SigninCard = () => {
             const response = await axios.post<LoginResponse>(`${API_BASE}/signin`, {
                 email,
                 password,
-            });
+            }, { withCredentials: true });
             return response.data;
         },
         onSuccess: (data) => {
@@ -74,7 +74,7 @@ export const SigninCard = () => {
         mutationFn: async (token: string) => {
             const response = await axios.post<Setup2faResponse>(`${API_BASE}/setup2fa`, {
                 challengeToken: token,
-            });
+            }, { withCredentials: true });
             return response.data;
         },
         onSuccess: (data) => {
@@ -93,12 +93,11 @@ export const SigninCard = () => {
             const response = await axios.post(`${API_BASE}/confirm2faSetup`, {
                 challengeToken: setup2faChallengeToken,
                 code: otpCode,
-            });
+            }, { withCredentials: true });
             return response.data;
         },
-        onSuccess: (data: { accessToken?: string; refreshToken?: string }) => {
-            if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
-            if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+        onSuccess: () => {
+            // Tokens are set as httpOnly cookies by the backend
             router.push("/dashboard");
         },
         onError: (error) => {
@@ -112,12 +111,11 @@ export const SigninCard = () => {
             const response = await axios.post(`${API_BASE}/verify2fa`, {
                 challengeToken,
                 code: otpCode,
-            });
+            }, { withCredentials: true });
             return response.data;
         },
-        onSuccess: (data: { accessToken?: string; refreshToken?: string }) => {
-            if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
-            if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+        onSuccess: () => {
+            // Tokens are set as httpOnly cookies by the backend
             router.push("/dashboard");
         },
         onError: (error) => {
