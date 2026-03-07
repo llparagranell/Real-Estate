@@ -6,8 +6,11 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // create super admin
-  const superAdminEmail = "owner@realbro.com";
-  const superAdminPassword = "Owner@123";
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD as string;
+  if (!superAdminEmail || !superAdminPassword) {
+    throw new Error("SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD are required");
+  }
   const superAdmin = await prisma.superAdmin.upsert({
     where: { email: superAdminEmail },
     update: {
@@ -48,22 +51,7 @@ async function main() {
       isEmailVerified: true,
       points: 0,
     }
-  });
-  // create property for first user
-  const property = await prisma.property.create({
-    data: {
-      title: "Test Property",
-      description: "Test Description",
-      status: "ACTIVE",
-      propertyType: "FLAT",
-      userId: firstUser.id,
-      amenities: [],
-      locationAdvantages: [],
-      listingPrice: 2500000,
-      city: "Bhopal",
-      state: "Madhya Pradesh",
-    },
-  });
+  })
 
   console.log('✅ First user created successfully!');
   console.log('📧 Email:', firstUser.email);
@@ -71,7 +59,6 @@ async function main() {
   console.log('🔑 Referral Code:', firstUser.referralCode);
   console.log('⚠️  Remember to change the password after first login!');
   console.log("✅ SuperAdmin ready:", superAdmin.email);
-  console.log("✅ Property created successfully:", property.id);
 }
 
 main()

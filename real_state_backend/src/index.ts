@@ -14,12 +14,13 @@ import savedPropertyRoutes from "./routes/savedProperty/savedProperty.route"
 import metadataRoutes from "./routes/metadata/metadata.route"
 import appointmentRoutes from "./routes/appointment/appointment.route"
 import staffRoutes from "./routes/staff/staff.routes"
-
+import cors from "cors";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: join(process.cwd(), '.env') });
 
 const app = express();
+app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:3000" }));
 app.use(express.json())
 const PORT = process.env.PORT || 5000;
 const server = createServer(app);
