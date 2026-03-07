@@ -1,10 +1,9 @@
 "use client"
-import { MailIcon } from "lucide-react";
+import { MailIcon, LockKeyholeOpen } from "lucide-react";
 import { Input } from "../ui/input";
-import { LockKeyholeOpen } from "lucide-react";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+
 interface LoginFormProps {
     email: string;
     password: string;
@@ -13,9 +12,9 @@ interface LoginFormProps {
     onSubmit: () => void;
     isPending: boolean;
     error: string | null;
-};
+}
+
 export const LoginForm = ({ email, password, onEmailChange, onPasswordChange, onSubmit, isPending, error }: LoginFormProps) => {
-    const router = useRouter();
     return (
         <div className="flex items-center justify-center">
             <div className="w-full max-w-md">
@@ -50,8 +49,7 @@ export const LoginForm = ({ email, password, onEmailChange, onPasswordChange, on
 
                     <Button
                         className="rounded-3xl py-6 text-[16px]"
-                        // onClick={() => onSubmit()}
-                        onClick={() => router.push("/dashboard")}
+                        onClick={() => onSubmit()}
                         disabled={isPending}
                     >
                         {isPending ? "Signing in..." : "Sign in"}

@@ -5,13 +5,16 @@ import { Button } from "../ui/button";
 
 interface Setup2FAProps {
     qrCodeUrl: string;
+    manualSetupCode?: string;
     otpCode: string;
     onOtpChange: (value: string) => void;
     error: string | null;
+    qrError?: string | null;
     onVerify: () => void;
     isPending: boolean;
+    isLoadingQr?: boolean;
 }
-export const Setup2FA = ({ qrCodeUrl, otpCode, onOtpChange,error, onVerify, isPending }: Setup2FAProps) => {
+export const Setup2FA = ({ qrCodeUrl, manualSetupCode, otpCode, onOtpChange, error, qrError, onVerify, isPending, isLoadingQr }: Setup2FAProps) => {
     return (
         <div className="flex items-center justify-center">
         <div className="w-full max-w-md text-center">
@@ -19,10 +22,20 @@ export const Setup2FA = ({ qrCodeUrl, otpCode, onOtpChange,error, onVerify, isPe
             <p className="text-gray-500 mb-6 text-sm">
                 Scan the QR code with Google Authenticator to enable 2FA.
             </p>
-            <div className="flex justify-center mb-6 bg-white p-4 rounded-lg">
-                {qrCodeUrl && <QRCodeSVG value={qrCodeUrl} size={100} />}
+            <div className="flex justify-center mb-6 bg-white p-4 rounded-lg min-h-[140px]">
+                {isLoadingQr ? (
+                    <div className="flex items-center justify-center text-gray-500 text-sm">Loading QR code...</div>
+                ) : qrError ? (
+                    <p className="text-red-500 text-sm">{qrError}</p>
+                ) : qrCodeUrl ? (
+                    <QRCodeSVG value={qrCodeUrl} size={128} />
+                ) : null}
             </div>
-
+            {manualSetupCode && (
+                <p className="text-gray-600 text-xs mb-4 break-all font-mono">
+                    Or enter manually: <span className="select-all">{manualSetupCode}</span>
+                </p>
+            )}
             <div className="flex justify-center mb-6">
                 <InputOTP
                     maxLength={6}
@@ -54,7 +67,7 @@ export const Setup2FA = ({ qrCodeUrl, otpCode, onOtpChange,error, onVerify, isPe
             <Button
                 className="w-full rounded-3xl py-6 text-[16px]"
                 onClick={onVerify}
-                disabled={isPending || otpCode.length < 6}
+                disabled={isPending || isLoadingQr || otpCode.length < 6}
             >
                 {isPending ? "Verifying..." : "Verify & Enable 2FA"}
             </Button>

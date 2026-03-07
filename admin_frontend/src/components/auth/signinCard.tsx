@@ -4,18 +4,29 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoginForm } from "./LoginForm";
 import { useMutation } from "@tanstack/react-query";
-import axios, { AxiosError } from "axios"; // Import axios
+import axios, { AxiosError } from "axios";
 import { Setup2FA } from "./setup2FA";
 import { Verify2FA } from "./verify2FA";
 
 type AuthStep = "LOGIN" | "SETUP_2FA" | "VERIFY_2FA";
 
-// Define the response types for better type safety
+const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/${process.env.NEXT_PUBLIC_API_VERSION}/staff/auth`;
+
 interface LoginResponse {
-    requireSetup: boolean;
-    require2fa: boolean;
-    otpauth_url?: string; // Only present if requireSetup is true
-    tempToken?: string;   // Likely needed for the next step to identify the session
+    nextStep: "VERIFY_2FA" | "SETUP_2FA";
+    challengeToken: string;
+    user: { id: string; role: string; email: string };
+}
+
+interface Setup2faResponse {
+    message: string;
+    data: {
+        challengeToken: string;
+        email: string;
+        qrCodeDataUrl: string;
+        manualSetupCode: string;
+        otpauthUrl: string;
+    };
 }
 
 export const SigninCard = () => {
@@ -24,70 +35,108 @@ export const SigninCard = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [otpCode, setOtpCode] = useState("");
-    const [qrCodeUrl, setQrCodeUrl] = useState("otpauth://totp/RealBros:admin@test.com?secret=JBSWY3DPEHPK3PXP&issuer=RealBros");
-    // use useState("") as this is for development purposes and replace by unique_url comes from backend
+    const [qrCodeUrl, setQrCodeUrl] = useState("");
+    const [manualSetupCode, setManualSetupCode] = useState("");
+    const [challengeToken, setChallengeToken] = useState("");
+    const [setup2faChallengeToken, setSetup2faChallengeToken] = useState("");
 
     const getErrorMessage = (error: unknown) => {
         if (error instanceof AxiosError) {
-            return error.response?.data?.message || error.message || "An error occurred";
+            const data = error.response?.data as { error?: string; message?: string } | undefined;
+            return data?.error || data?.message || error.message || "An error occurred";
         }
         return "An unexpected error occurred";
     };
 
-    //Mutation for Login
+    // Login with email + password
     const loginMutation = useMutation({
         mutationFn: async () => {
-            // Adjust the URL to match actual backend api endpoint
-            const response = await axios.post<LoginResponse>('/api/auth/login', {
+            const response = await axios.post<LoginResponse>(`${API_BASE}/signin`, {
                 email,
-                password
+                password,
             });
             return response.data;
         },
         onSuccess: (data) => {
-            if (data.requireSetup && data.otpauth_url) {
-                setQrCodeUrl(data.otpauth_url);
-                setStep("SETUP_2FA");
-            } else if (data.require2fa) {
-                setStep("VERIFY_2FA");
-            } else {
-                router.push("/dashboard");
+            setChallengeToken(data.challengeToken);
+            setStep(data.nextStep);
+            if (data.nextStep === "SETUP_2FA") {
+                setup2faMutation.mutate(data.challengeToken);
             }
         },
         onError: (error) => {
-            console.error(error);
-        }
+            console.error("Login error:", error);
+        },
     });
 
-    // Mutation for Verify OTP
-    const verifyOtpMutation = useMutation({
-        mutationFn: async () => {
-            // Determine which endpoint to hit based on the current step
-            const endpoint = step === "SETUP_2FA"
-                ? '/api/auth/2fa/setup/verify'
-                : '/api/auth/2fa/verify';
-
-            // need to send the email or a temp token along with the code
-            const response = await axios.post(endpoint, {
-                email,
-                token: otpCode
+    // 2. Fetch QR code when nextStep is SETUP_2FA (called automatically after login)
+    const setup2faMutation = useMutation({
+        mutationFn: async (token: string) => {
+            const response = await axios.post<Setup2faResponse>(`${API_BASE}/setup2fa`, {
+                challengeToken: token,
             });
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
+            setQrCodeUrl(data.data.otpauthUrl || data.data.qrCodeDataUrl);
+            setManualSetupCode(data.data.manualSetupCode);
+            setSetup2faChallengeToken(data.data.challengeToken);
+        },
+        onError: (error) => {
+            console.error("Setup2FA fetch error:", error);
+        },
+    });
+
+    // 3. Confirm 2FA setup (user scanned QR and entered code)
+    const confirm2faMutation = useMutation({
+        mutationFn: async () => {
+            const response = await axios.post(`${API_BASE}/confirm2faSetup`, {
+                challengeToken: setup2faChallengeToken,
+                code: otpCode,
+            });
+            return response.data;
+        },
+        onSuccess: (data: { accessToken?: string; refreshToken?: string }) => {
+            if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
+            if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
             router.push("/dashboard");
-        }
+        },
+        onError: (error) => {
+            console.error("Confirm 2FA error:", error);
+        },
+    });
+
+    // 4. Verify 2FA (user already has 2FA, just entering code)
+    const verify2faMutation = useMutation({
+        mutationFn: async () => {
+            const response = await axios.post(`${API_BASE}/verify2fa`, {
+                challengeToken,
+                code: otpCode,
+            });
+            return response.data;
+        },
+        onSuccess: (data: { accessToken?: string; refreshToken?: string }) => {
+            if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
+            if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+            router.push("/dashboard");
+        },
+        onError: (error) => {
+            console.error("Verify 2FA error:", error);
+        },
     });
 
     if (step === "SETUP_2FA") {
         return (
             <Setup2FA
                 qrCodeUrl={qrCodeUrl}
+                manualSetupCode={manualSetupCode}
                 otpCode={otpCode}
                 onOtpChange={setOtpCode}
-                onVerify={() => verifyOtpMutation.mutate()}
-                isPending={verifyOtpMutation.isPending}
-                error={verifyOtpMutation.isError ? getErrorMessage(verifyOtpMutation.error) : null}
+                onVerify={() => confirm2faMutation.mutate()}
+                isPending={confirm2faMutation.isPending}
+                isLoadingQr={setup2faMutation.isPending}
+                qrError={setup2faMutation.isError ? getErrorMessage(setup2faMutation.error) : null}
+                error={confirm2faMutation.isError ? getErrorMessage(confirm2faMutation.error) : null}
             />
         );
     }
@@ -96,15 +145,14 @@ export const SigninCard = () => {
             <Verify2FA
                 otpCode={otpCode}
                 onOtpChange={setOtpCode}
-                onVerify={() => verifyOtpMutation.mutate()}
+                onVerify={() => verify2faMutation.mutate()}
                 onBack={() => setStep("LOGIN")}
-                isPending={verifyOtpMutation.isPending}
-                error={verifyOtpMutation.isError ? getErrorMessage(verifyOtpMutation.error) : null}
+                isPending={verify2faMutation.isPending}
+                error={verify2faMutation.isError ? getErrorMessage(verify2faMutation.error) : null}
             />
         );
     }
 
-    // default login
     return (
         <LoginForm
             email={email}
@@ -113,7 +161,7 @@ export const SigninCard = () => {
             onPasswordChange={setPassword}
             onSubmit={() => loginMutation.mutate()}
             isPending={loginMutation.isPending}
-            error={loginMutation.error ? getErrorMessage(loginMutation.error) : null}
+            error={loginMutation.isError ? getErrorMessage(loginMutation.error) : null}
         />
     );
 };
