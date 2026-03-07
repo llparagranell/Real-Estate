@@ -16,6 +16,7 @@ export async function getAllUsers(req: Request, res: Response) {
                 updatedAt: true,
                 kyc: {
                     select: {
+                        type: true,
                         status: true,
                     }
                 },

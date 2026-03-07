@@ -10,6 +10,7 @@ export enum KYCStatus {
 }
 
 export type UserColumnInterface = {
+    id: string;
     username: string
     email: string
     gems: number
@@ -67,13 +68,20 @@ export const allUsersColumns: ColumnDef<UserColumnInterface>[] = [
 
     {
         id: "propertyListings",
-        header: "Property Listing Details",
+        header: ()=>{
+            return (
+                <h1 className="pl-10"
+                >
+                    Property Listing Details
+                </h1>
+            )
+        },
         cell: ({ row }) => {
             const l = row.original.propertyListings
             return (
                 <div className="text-sm text-foreground font-semibold whitespace-nowrap">
                     Total: <span className="font-medium text-foreground">{l.total}</span>
-                    {" ,Sold: "}<span className="font-medium text-foreground">{l.sold}</span>
+                    {" , Sold: "}<span className="font-medium text-foreground">{l.sold}</span>
                     {", Active: "}<span className="font-medium text-foreground">{l.active}</span>
                     {", Unlisted: "}<span className="font-medium text-foreground">{l.unlisted}</span>
                 </div>
