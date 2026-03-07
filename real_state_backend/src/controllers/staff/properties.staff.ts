@@ -110,12 +110,83 @@ export async function acquisitionRequest(req: Request, res: Response) {
             })
             return res.status(200).json({ message: "Acquisition requested successfully" });
         } else if (role === "SUPER_ADMIN") {
-            const acquisitionRequest = await prisma.propertyAcquisitionRequest.update({
-                where: { propertyId: propertyId },
-                data: {
-                    status: "APPROVED",
+            const existingRequest = await prisma.propertyAcquisitionRequest.findUnique({
+                where: { propertyId },
+            });
+            if (existingRequest) {
+                const acquisitionRequest = await prisma.propertyAcquisitionRequest.update({
+                    where: { propertyId },
+                    data: {
+                        status: "APPROVED",
+                    },
+                });
+                await prisma.property.update({
+                    where: { id: propertyId },
+                    data: {
+                        status: "SOLDTOREALBRO",
+                    },
+                });
+                return res.status(200).json({ message: "Acquisition Approved successfully", data: acquisitionRequest });
+            }
+
+            const superAdmin = await prisma.superAdmin.findUnique({
+                where: { id: staffId },
+                select: {
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                    isActive: true,
+                },
+            });
+
+            let requesterStaff = await prisma.staff.findFirst({
+                where: superAdmin?.email
+                    ? {
+                        OR: [
+                            { id: staffId },
+                            { email: superAdmin.email, role: "SUPER_ADMIN" },
+                        ],
+                    }
+                    : { id: staffId },
+                select: { id: true },
+            });
+
+            if (!requesterStaff) {
+                requesterStaff = await prisma.staff.findFirst({
+                    where: { role: "SUPER_ADMIN", isActive: true },
+                    select: { id: true },
+                });
+            }
+
+            if (!requesterStaff) {
+                if (!superAdmin) {
+                    return res.status(401).json({ message: "Unauthorized" });
                 }
-            })
+
+                requesterStaff = await prisma.staff.upsert({
+                    where: { email: superAdmin.email },
+                    update: {
+                        role: "SUPER_ADMIN",
+                        isActive: superAdmin.isActive,
+                    },
+                    create: {
+                        email: superAdmin.email,
+                        firstName: superAdmin.firstName ?? "Super",
+                        lastName: superAdmin.lastName ?? "Admin",
+                        role: "SUPER_ADMIN",
+                        isActive: superAdmin.isActive,
+                    },
+                    select: { id: true },
+                });
+            }
+
+            const acquisitionRequest = await prisma.propertyAcquisitionRequest.create({
+                data: {
+                    propertyId,
+                    requestedByStaffId: requesterStaff.id,
+                    status: "APPROVED",
+                },
+            });
             return res.status(200).json({ message: "Acquisition Approved successfully", data: acquisitionRequest });
         }
     } catch (error) {
@@ -148,6 +219,17 @@ export async function acquisitionRequestApproval(req: Request, res: Response) {
             where: { propertyId: propertyId as string },
             data: { status: decision },
         });
+        if (decision === "APPROVED") {
+            await prisma.property.update({
+                where: { id: propertyId as string },
+                data: { status: "SOLDTOREALBRO" },
+            });
+        }
+        if (decision === "REJECTED") {
+            await prisma.propertyAcquisitionRequest.delete({
+                where: { propertyId: propertyId as string },
+            });
+        }
         return res.status(200).json({ message: `Property acquisition request ${decision} successfully` });
     } catch (error) {
         console.error("Acquisition request approval error:", error);
