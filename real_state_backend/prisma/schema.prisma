@@ -78,7 +78,7 @@ model User {
   referrerId   String?
   referrer     User?   @relation("Referrals", references: [id], fields: [referrerId])
   referrals    User[]  @relation("Referrals") //users referred by User. 
-  points       Int     @default(0)
+  points       Int     @default(0) //rename to gems later
 
   //verification
   isEmailVerified Boolean @default(false)

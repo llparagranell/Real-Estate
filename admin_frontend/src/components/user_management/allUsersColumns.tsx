@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { Eye, Pencil, Trash2, OctagonMinus, BadgeCheck, ShieldCheck, Clock, Gem, ArrowUpDown } from "lucide-react"
+import { Eye, Pencil, Trash2, OctagonMinus, BadgeCheck, Gem, ArrowUpDown } from "lucide-react"
 import Link from "next/link"
 export enum KYCStatus {
     Verified = "Verified",
@@ -106,16 +106,33 @@ export const allUsersColumns: ColumnDef<UserColumnInterface>[] = [
 
     {
         accessorKey: "kycStatus",
-        header: "KYC Status",
+        header: ()=>{
+            return (
+                <h1 className="pl-12"
+                >
+                    KYC Status
+                </h1>
+            )
+        },
         cell: ({ row }) => {
             const kycStatus = row.original.kycStatus;
 
             return (
                 <div className={`flex items-center gap-1.5 font-medium}`}>
-                    {kycStatus == "Verified"
+                    <p className="text-foreground font-bold">UID: </p>
+
+                    {/* {kycStatus == "Verified"
                         ? <ShieldCheck className="size-4 text-green-600" />
                         : <Clock className="size-4 text-orange-500" />
-                    }
+                    } */}
+                    <p className="text-foreground font-medium">
+                        {kycStatus}
+                    </p>
+                    <p className="text-foreground font-bold">PAN: </p>
+                    {/* {kycStatus == "Verified"
+                        ? <ShieldCheck className="size-4 text-green-600" />
+                        : <Clock className="size-4 text-orange-500" />
+                    } */}
                     <p className="text-foreground font-medium">
                         {kycStatus}
                     </p>
