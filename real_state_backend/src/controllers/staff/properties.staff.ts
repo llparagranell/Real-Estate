@@ -124,7 +124,6 @@ export async function acquisitionRequest(req: Request, res: Response) {
     }
 };
 
-
 export async function acquisitionRequestApproval(req: Request, res: Response) {
     try {
         const staffId = req.user?.id;
@@ -354,6 +353,120 @@ export async function updateExclusiveProperty(req: Request, res: Response) {
         });
     } catch (error) {
         console.error("Update exclusive property error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function getAllProperties(req: Request, res: Response) {
+    try {
+        if (!req.user?.id || !req.user?.role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        const page = Math.max(Number(req.query.page ?? 1), 1);
+        const limit = Math.min(Math.max(Number(req.query.limit ?? 10), 1), 100);
+        const skip = (page - 1) * limit;
+        const [properties, total] = await Promise.all([
+            prisma.property.findMany({
+                skip,
+                take: limit,
+                orderBy: { createdAt: "desc" },
+                include: { media: true, user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
+            }),
+            prisma.property.count(),
+        ]);
+        return res.status(200).json({
+            success: true,
+            data: properties,
+            pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+        });
+    } catch (error) {
+        console.error("Get all properties error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function getAllExclusiveProperties(req: Request, res: Response) {
+    try {
+        if (!req.user?.id || !req.user?.role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        const page = Math.max(Number(req.query.page ?? 1), 1);
+        const limit = Math.min(Math.max(Number(req.query.limit ?? 10), 1), 100);
+        const skip = (page - 1) * limit;
+        const [exclusiveProperties, total] = await Promise.all([
+            prisma.exclusiveProperty.findMany({
+                skip,
+                take: limit,
+                orderBy: { createdAt: "desc" },
+                include: {
+                    media: true,
+                    sourceProperty: { select: { id: true, title: true, status: true } },
+                    originalUser: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+                },
+            }),
+            prisma.exclusiveProperty.count(),
+        ]);
+        return res.status(200).json({
+            success: true,
+            data: exclusiveProperties,
+            pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+        });
+    } catch (error) {
+        console.error("Get all exclusive properties error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function getProperty(req: Request, res: Response) {
+    try {
+        if (!req.user?.id || !req.user?.role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        const { propertyId } = req.params as { propertyId: string };
+        if (!propertyId) {
+            return res.status(400).json({ message: "propertyId is required" });
+        }
+        const property = await prisma.property.findUnique({
+            where: { id: propertyId },
+            include: {
+                media: true,
+                user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+                exclusiveProperty: { select: { id: true, status: true, fixedRewardGems: true } },
+            },
+        });
+        if (!property) {
+            return res.status(404).json({ message: "Property not found" });
+        }
+        return res.status(200).json({ success: true, data: property });
+    } catch (error) {
+        console.error("Get property error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function getExclusiveProperty(req: Request, res: Response) {
+    try {
+        if (!req.user?.id || !req.user?.role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        const { exclusivePropertyId } = req.params as { exclusivePropertyId: string };
+        if (!exclusivePropertyId) {
+            return res.status(400).json({ message: "exclusivePropertyId is required" });
+        }
+        const exclusiveProperty = await prisma.exclusiveProperty.findUnique({
+            where: { id: exclusivePropertyId },
+            include: {
+                media: true,
+                sourceProperty: { include: { media: true, user: { select: { id: true, firstName: true, lastName: true, email: true } } } },
+                originalUser: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+            },
+        });
+        if (!exclusiveProperty) {
+            return res.status(404).json({ message: "Exclusive property not found" });
+        }
+        return res.status(200).json({ success: true, data: exclusiveProperty });
+    } catch (error) {
+        console.error("Get exclusive property error:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 }
