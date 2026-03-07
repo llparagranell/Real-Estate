@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
-export function addBookMark(req: Request, res: Response) {
-    try{
+export async function addBookMark(req: Request, res: Response) {
+    try {
         const staffId = req.user?.id;
         const role = req.user?.role;
         if (!staffId || !role) {
@@ -18,10 +18,65 @@ export function addBookMark(req: Request, res: Response) {
         if (!property) {
             return res.status(404).json({ message: "Property not found" });
         }
-        const bookmark = await prisma.property.update({
+        const bookmark = await prisma.staffPropertyBookmark.create({
             data: { propertyId, staffId },
+            select: { id: true },
+        });
+        return res.status(200).json({ message: "Bookmark added successfully", data: bookmark });
 
-    }catch(error){
-
+    } catch (error) {
+        console.error("Add bookmark error:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
-}
+};
+
+export async function removeBookMark(req: Request, res: Response) {
+    try {
+        const staffId = req.user?.id;
+        const role = req.user?.role;
+        if (!staffId || !role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        if (!["ADMIN", "SUPER_ADMIN"].includes(role)) {
+            return res.status(403).json({ message: "Forbidden" });
+        }
+        const { propertyId } = req.body as { propertyId: string };
+        const property = await prisma.property.findUnique({
+            where: { id: propertyId },
+            select: { id: true },
+        });
+        if (!property) {
+            return res.status(404).json({ message: "Property not found" });
+        }
+        const bookmark = await prisma.staffPropertyBookmark.delete({
+            where: { staffId_propertyId: { staffId, propertyId } },
+            select: { id: true },
+        });
+        return res.status(200).json({ message: "Bookmark removed successfully", data: bookmark });
+    } catch (error) {
+        console.error("Remove bookmark error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export async function getBookMarks(req: Request, res: Response) {
+    try {
+        const staffId = req.user?.id;
+        const role = req.user?.role;
+        if (!staffId || !role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        if (!["ADMIN", "SUPER_ADMIN"].includes(role)) {
+            return res.status(403).json({ message: "Forbidden" });
+        }
+        const bookmarks = await prisma.staffPropertyBookmark.findMany({
+            where: { staffId },
+            select: { id: true, property: { select: { id: true, title: true, status: true } } },
+        });
+        return res.status(200).json({ message: "Bookmarks fetched successfully", data: bookmarks });
+    } catch (error) {
+        console.error("Get bookmarks error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+

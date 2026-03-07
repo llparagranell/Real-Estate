@@ -115,6 +115,7 @@ enum PropertyStatus {
   SOLDTOREALBRO
   SOLDFROMLISTINGS
   DRAFT
+  UNDER_ACQUISITION
 }
 
 enum SizeUnit {
@@ -385,6 +386,11 @@ model StaffPropertyBookmark {
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([staffId, propertyId])
+  @@index([staffId])
+  @@index([propertyId])
+  @@map("staff_property_bookmarks") 
 }
 
 enum KycType {
