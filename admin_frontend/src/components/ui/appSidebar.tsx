@@ -34,6 +34,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { RequireRole } from "@/components/auth/RequireRole"
 
 const items = [
     { title: "Dashboard", url: "/dashboard", icon: BarChart2 },
@@ -43,7 +44,7 @@ const items = [
         icon: Building2,
         children: [
             { title: "All Listings", url: "/property/all-listings", icon: Home },
-            { title: "Exclusive Listings", url: "/property/exclusive-listings", icon:Crown },
+            { title: "Exclusive Listings", url: "/property/exclusive-listings", icon: Crown },
         ],
     },
     {
@@ -51,7 +52,7 @@ const items = [
         url: "#",
         icon: User,
         children: [
-            { title: "All Users", url: "/user-management/all-users", icon:Users2 },
+            { title: "All Users", url: "/user-management/all-users", icon: Users2 },
             { title: "Blocked Users", url: "/user-management/blocked-users", icon: OctagonMinus },
         ],
     },
@@ -60,7 +61,7 @@ const items = [
     { title: "Financials", url: "/financials", icon: WalletIcon },
     { title: "Banner Management", url: "/banner-management", icon: Image },
     { title: "Support Tickets", url: "/support-tickets", icon: LucideTickets },
-    { title: "Role Management", url: "/role-management", icon: UserCog },
+    { title: "Role Management", url: "/role-management", icon: UserCog, roles: ["SUPER_ADMIN"] as const },
 ]
 
 export const AppSidebar = () => {
@@ -113,6 +114,20 @@ export const AppSidebar = () => {
                                             })}
                                         </CollapsibleContent>
                                     </Collapsible>
+                                ) : "roles" in item && item.roles ? (
+                                    <RequireRole key={item.title} roles={[...item.roles]}>
+                                        <SidebarMenuItem>
+                                            <SidebarMenuButton
+                                                asChild
+                                                className="text-[16px] font-medium text-gray-600 h-12 w-3xs hover:bg-blue-100 hover:text-blue-500"
+                                            >
+                                                <a href={item.url}>
+                                                    <item.icon className="size-5!" />
+                                                    <span>{item.title}</span>
+                                                </a>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    </RequireRole>
                                 ) : (
                                     <SidebarMenuItem key={item.title}>
                                         <SidebarMenuButton

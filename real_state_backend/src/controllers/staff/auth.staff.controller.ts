@@ -337,6 +337,21 @@ export async function verify2fa(req: Request, res: Response) {
     }
 }
 
+export async function me(req: Request, res: Response) {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(401).json({ error: "Not authenticated" });
+        }
+        return res.status(200).json({
+            user: { id: user.id, role: user.role },
+        });
+    } catch (error) {
+        console.error("me error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+}
+
 export async function signout(req: Request, res: Response) {
     try {
         // Read refreshToken from cookie (httpOnly) or body (backward compatibility)
@@ -355,6 +370,7 @@ export async function signout(req: Request, res: Response) {
         };
         res.clearCookie("accessToken", cookieOptions);
         res.clearCookie("refreshToken", cookieOptions);
+        res.clearCookie("role", cookieOptions);
         return res.status(200).json({ message: "Logged out successfully" });
     } catch (error) {
         console.error("signout error:", error);
