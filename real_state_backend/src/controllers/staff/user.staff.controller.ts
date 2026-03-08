@@ -10,6 +10,8 @@ export async function getAllUsers(req: Request, res: Response) {
                 email: true,
                 phone: true,
                 isBlocked: true,
+                blockedBy: true,
+                blockedOn: true,
                 points: true,
                 isEmailVerified: true,
                 createdAt: true,
@@ -49,6 +51,69 @@ export async function getAllUsers(req: Request, res: Response) {
         return res.status(200).json({ users: userWithStats });
     } catch (error) {
         console.error("Get all users error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function getAllBlockedUsers(req: Request, res: Response) {
+    try {
+        const users = await prisma.user.findMany({
+            where: { isBlocked: true },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+                isBlocked: true,
+                blockedBy: true,
+                blockedOn: true,
+                points: true,
+                isEmailVerified: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+        });
+        return res.status(200).json({ users: users });
+    } catch (error) {
+        console.error("Get all blocked users error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function blockUser(req: Request, res: Response) {
+    try {
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const blockedBy = req.user?.id ?? null;
+        if (!id) {
+            return res.status(400).json({ message: "User id is required" });
+        }
+
+        const existingUser = await prisma.user.findUnique({
+            where: { id },
+            select: { id: true, isBlocked: true },
+        });
+
+        if (!existingUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (existingUser.isBlocked) {
+            return res.status(200).json({ message: "User is already blocked" });
+        }
+
+        await prisma.user.update({
+            where: { id },
+            data: {
+                isBlocked: true,
+                blockedBy,
+                blockedOn: new Date(),
+            },
+        });
+
+        return res.status(200).json({ message: "User blocked successfully" });
+    } catch (error) {
+        console.error("Block user error:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 }
