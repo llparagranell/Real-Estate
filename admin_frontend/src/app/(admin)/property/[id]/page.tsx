@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
+import { ParkingCircle } from "lucide-react"
 import { PropertyImageCarousel } from "@/components/propertyDetails/propertyImageCarousel"
 import { PropertyBrokerInfo } from "@/components/propertyDetails/propertyBrokerInfo"
 import { PropertyActionBar } from "@/components/propertyDetails/propertyActionBar"
@@ -20,11 +21,21 @@ type PropertyResponse = {
         propertyType: string | null
         status: string
         listingPrice: number | null
+        priceMin: number | null
+        priceMax: number | null
+        state: string | null
         city: string | null
         locality: string | null
         subLocality: string | null
+        flatNo: string | null
+        area: string | null
+        address: string | null
+        latitude: number | null
+        longitude: number | null
         carpetArea: number | null
         carpetAreaUnit: string | null
+        plotLandArea: number | null
+        plotLandAreaUnit: string | null
         size: number | null
         sizeUnit: string | null
         category: string | null
@@ -35,16 +46,38 @@ type PropertyResponse = {
         numberOfBathrooms: number | null
         numberOfBalcony: number | null
         numberOfFloors: number | null
+        propertyFloor: string | null
+        allInclusivePrice: boolean
+        negotiablePrice: boolean
+        govtChargesTaxIncluded: boolean
         propertyFacing: string | null
+        amenities: string[]
+        locationAdvantages: string[]
+        coveredParking: number
+        uncoveredParking: number
         createdAt: string
-        media: Array<{ url: string }>
+        updatedAt: string
+        userId: string
+        media: Array<{
+            id: string
+            url: string
+            key: string
+            mediaType: string
+            order: number
+            createdAt: string
+            propertyId: string
+        }>
         user: {
+            id: string
             firstName: string
             lastName: string
+            email: string
+            phone: string
         }
         exclusiveProperty: {
             id: string
             fixedRewardGems: number
+            status: string
         } | null
     }
 }
@@ -182,6 +215,22 @@ export default function PropertyPage() {
                 <div className="w-1/2">
                     <PropertyDetailsPanel data={details} />
                     <PropertyAbout description={property.description || "No description provided."} />
+                    <div className="mt-5 border rounded-xl p-4">
+                        <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
+                            <ParkingCircle className="size-4 text-gray-600" />
+                            Parking Details
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="border rounded-lg p-3">
+                                <p className="text-gray-500">Covered Parking</p>
+                                <p className="font-semibold text-base">{property.coveredParking ?? 0}</p>
+                            </div>
+                            <div className="border rounded-lg p-3">
+                                <p className="text-gray-500">Uncovered Parking</p>
+                                <p className="font-semibold text-base">{property.uncoveredParking ?? 0}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             )}
