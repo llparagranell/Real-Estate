@@ -63,7 +63,7 @@ export function PropertyCard({ property, variant = "default", onEdit, onBuy, onM
     return (
         <Card className="border py-0 gap-0 overflow-hidden">
             <div className="relative">
-                <Link href={`/property/1`}>
+                <Link href={`/property/${property.id}`}>
                 <Image
                     src={property.imageUrl}
                     alt={property.title}
