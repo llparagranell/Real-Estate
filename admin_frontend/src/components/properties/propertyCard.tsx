@@ -90,11 +90,14 @@ export function PropertyCard({ property, variant = "default", onEdit, onBuy, onM
             setIsSubmittingBuy(false)
         }
     }
+    const propertyDetailsHref = isExclusive
+        ? `/property/exclusive-listings/${property.id}`
+        : `/property/${property.id}`
 
     return (
         <Card className="border py-0 gap-0 overflow-hidden">
             <div className="relative">
-                <Link href={`/property/${property.id}`}>
+                <Link href={propertyDetailsHref}>
                 <Image
                     src={property.imageUrl}
                     alt={property.title}
