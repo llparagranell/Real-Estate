@@ -14,6 +14,7 @@ interface PropertyActionBarProps {
     onBookmark?: () => void
     isBookmarked?: boolean
     onPrimaryAction?: () => void
+    showMakeExclusiveButton?: boolean
 }
 
 export function PropertyActionBar({
@@ -25,6 +26,7 @@ export function PropertyActionBar({
     onBookmark,
     isBookmarked = false,
     onPrimaryAction,
+    showMakeExclusiveButton = true,
 }: PropertyActionBarProps) {
     const isExclusive = variant === "exclusive"
     const router = useRouter()
@@ -95,12 +97,15 @@ export function PropertyActionBar({
                     </Button>
                 )}
             </div>
-            <Button className="bg-blue-600 hover:bg-blue-700"
-            onClick={() => router.push(`/property/make-it-exclusive/${propertyId}`)}
-            >
-                <CheckCircle className="size-3.5" />
-                Make It Exclusive
-            </Button>
+            {showMakeExclusiveButton && (
+                <Button
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => router.push(`/property/make-it-exclusive/${propertyId}`)}
+                >
+                    <CheckCircle className="size-3.5" />
+                    Make It Exclusive
+                </Button>
+            )}
         </div>
     )
 }
