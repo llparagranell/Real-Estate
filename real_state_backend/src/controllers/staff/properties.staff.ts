@@ -321,7 +321,11 @@ export async function createExclusiveProperty(req: Request, res: Response) {
 
         const property = await prisma.property.findUnique({
             where: { id: propertyId },
-            include: { media: true, exclusiveProperty: true },
+            include: {
+                media: true,
+                // Keep this select minimal to avoid selecting stale columns from old client/schema drift.
+                exclusiveProperty: { select: { id: true } },
+            },
         });
         if (!property) {
             return res.status(404).json({ message: "Property not found" });
@@ -413,7 +417,13 @@ export async function createExclusiveProperty(req: Request, res: Response) {
                           }
                         : undefined,
             },
-            include: {
+            select: {
+                id: true,
+                title: true,
+                status: true,
+                fixedRewardGems: true,
+                createdAt: true,
+                updatedAt: true,
                 sourceProperty: { select: { id: true, title: true, status: true } },
                 originalUser: { select: { id: true, firstName: true, lastName: true, email: true } },
                 media: true,
@@ -427,7 +437,7 @@ export async function createExclusiveProperty(req: Request, res: Response) {
         });
     } catch (error) {
         console.error("Create exclusive property error:", error);
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(500).json({ message: "Internal server error",error });
     }
 }
 
@@ -453,7 +463,7 @@ export async function updateExclusiveProperty(req: Request, res: Response) {
 
         const existing = await prisma.exclusiveProperty.findUnique({
             where: { id: exclusivePropertyId },
-            include: { media: true },
+            select: { id: true },
         });
         if (!existing) {
             return res.status(404).json({ message: "Exclusive property not found" });
@@ -484,7 +494,13 @@ export async function updateExclusiveProperty(req: Request, res: Response) {
                       }
                     : {}),
             },
-            include: {
+            select: {
+                id: true,
+                title: true,
+                status: true,
+                fixedRewardGems: true,
+                createdAt: true,
+                updatedAt: true,
                 sourceProperty: { select: { id: true, title: true, status: true } },
                 originalUser: { select: { id: true, firstName: true, lastName: true, email: true } },
                 media: true,
@@ -615,7 +631,21 @@ export async function getAllExclusiveProperties(req: Request, res: Response) {
                 skip,
                 take: limit,
                 orderBy: { createdAt: "desc" },
-                include: {
+                select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                    listingPrice: true,
+                    city: true,
+                    locality: true,
+                    subLocality: true,
+                    numberOfRooms: true,
+                    numberOfBathrooms: true,
+                    numberOfBalcony: true,
+                    numberOfFloors: true,
+                    furnishingStatus: true,
+                    createdAt: true,
+                    fixedRewardGems: true,
                     media: true,
                     sourceProperty: { select: { id: true, title: true, status: true } },
                     originalUser: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
@@ -672,7 +702,52 @@ export async function getExclusiveProperty(req: Request, res: Response) {
         }
         const exclusiveProperty = await prisma.exclusiveProperty.findUnique({
             where: { id: exclusivePropertyId },
-            include: {
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                propertyType: true,
+                status: true,
+                listingPrice: true,
+                priceMin: true,
+                priceMax: true,
+                state: true,
+                city: true,
+                locality: true,
+                subLocality: true,
+                flatNo: true,
+                area: true,
+                address: true,
+                latitude: true,
+                longitude: true,
+                carpetArea: true,
+                carpetAreaUnit: true,
+                plotLandArea: true,
+                plotLandAreaUnit: true,
+                size: true,
+                sizeUnit: true,
+                category: true,
+                furnishingStatus: true,
+                availabilityStatus: true,
+                ageOfProperty: true,
+                numberOfRooms: true,
+                numberOfBathrooms: true,
+                numberOfBalcony: true,
+                numberOfFloors: true,
+                propertyFloor: true,
+                allInclusivePrice: true,
+                negotiablePrice: true,
+                govtChargesTaxIncluded: true,
+                propertyFacing: true,
+                amenities: true,
+                locationAdvantages: true,
+                coveredParking: true,
+                uncoveredParking: true,
+                fixedRewardGems: true,
+                soldOutAt: true,
+                notes: true,
+                createdAt: true,
+                updatedAt: true,
                 media: true,
                 sourceProperty: { include: { media: true, user: { select: { id: true, firstName: true, lastName: true, email: true } } } },
                 originalUser: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },

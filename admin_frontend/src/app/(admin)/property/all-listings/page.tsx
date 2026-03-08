@@ -24,6 +24,7 @@ export default function AllPropertiesPage() {
     const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [actionMessage, setActionMessage] = useState<string | null>(null)
 
     useEffect(() => {
         let isMounted = true
@@ -110,6 +111,19 @@ export default function AllPropertiesPage() {
         }
     }
 
+    const handleBuyProperty = async (propertyId: string) => {
+        setActionMessage(null)
+        try {
+            const response = await api.post<{ message?: string }>("/staff/properties/acquisition-request", {
+                propertyId,
+            })
+            setActionMessage(response.data.message ?? "Request submitted successfully")
+        } catch (err) {
+            console.error("Failed to buy/request property:", err)
+            setActionMessage("Failed to process property acquisition")
+        }
+    }
+
     return (
         <div>
             <div className="flex items-center justify-between">
@@ -136,9 +150,16 @@ export default function AllPropertiesPage() {
 
             <div className="flex gap-4 mt-4 px-2">
                 <div className="w-2/3">
+                    {actionMessage && <p className="text-sm text-blue-600 mb-2">{actionMessage}</p>}
                     {isLoading && <p className="text-sm text-gray-500">Loading properties...</p>}
                     {error && <p className="text-sm text-red-500">{error}</p>}
-                    {!isLoading && !error && <PropertyGrid properties={filteredProperties} onFavorite={handleToggleBookmark} />}
+                    {!isLoading && !error && (
+                        <PropertyGrid
+                            properties={filteredProperties}
+                            onFavorite={handleToggleBookmark}
+                            onBuy={handleBuyProperty}
+                        />
+                    )}
                 </div>
                 <div className="w-1/3">
                     <PendingApprovalList approvals={mockPendingApprovals} />

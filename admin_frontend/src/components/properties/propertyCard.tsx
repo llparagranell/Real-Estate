@@ -1,9 +1,19 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { useAuth } from "@/contexts/AuthContext"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import {
     CalendarDays,
     Ruler,
@@ -47,7 +57,7 @@ interface PropertyCardProps {
     property: PropertyCardData
     variant?: PropertyCardVariant
     onEdit?: (id: string) => void
-    onBuy?: (id: string) => void
+    onBuy?: (id: string) => void | Promise<void>
     onMarkAsSold?: (id: string) => void
     onFavorite?: (id: string) => void
 }
@@ -61,6 +71,26 @@ const statusColors: Record<PropertyCardData["status"], string> = {
 
 export function PropertyCard({ property, variant = "default", onEdit, onBuy, onMarkAsSold, onFavorite }: PropertyCardProps) {
     const isExclusive = variant === "exclusive"
+    const { user } = useAuth()
+    const [buyDialogOpen, setBuyDialogOpen] = useState(false)
+    const [isSubmittingBuy, setIsSubmittingBuy] = useState(false)
+
+    const isSuperAdmin = user?.role === "SUPER_ADMIN"
+    const buyConfirmationText = isSuperAdmin
+        ? "Are you sure you want to buy this property as RealBro?"
+        : "Are you sure you want to request acquisition of this property?"
+
+    const handleConfirmBuy = async () => {
+        if (!onBuy) return
+        try {
+            setIsSubmittingBuy(true)
+            await onBuy(property.id)
+            setBuyDialogOpen(false)
+        } finally {
+            setIsSubmittingBuy(false)
+        }
+    }
+
     return (
         <Card className="border py-0 gap-0 overflow-hidden">
             <div className="relative">
@@ -177,15 +207,39 @@ export function PropertyCard({ property, variant = "default", onEdit, onBuy, onM
                             Mark as Sold
                         </Button>
                     ) : property.status === "Active" ? (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 h-8 text-[11px] text-blue-600 border-blue-200 hover:bg-blue-50"
-                            onClick={() => onBuy?.(property.id)}
-                        >
-                            <ShoppingCart className="size-3 mr-1" />
-                            Buy Property
-                        </Button>
+                        <>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1 h-8 text-[11px] text-blue-600 border-blue-200 hover:bg-blue-50"
+                                onClick={() => setBuyDialogOpen(true)}
+                            >
+                                <ShoppingCart className="size-3 mr-1" />
+                                Buy Property
+                            </Button>
+                            <Dialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen}>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Confirm Action</DialogTitle>
+                                        <DialogDescription>
+                                            {buyConfirmationText}
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <DialogFooter>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setBuyDialogOpen(false)}
+                                            disabled={isSubmittingBuy}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button onClick={handleConfirmBuy} disabled={isSubmittingBuy || !onBuy}>
+                                            {isSubmittingBuy ? "Processing..." : "Confirm"}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </>
                     ) : (
                         <Button
                             variant="outline"
