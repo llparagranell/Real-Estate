@@ -9,6 +9,9 @@ export type StaffRole = "SUPER_ADMIN" | "ADMIN" | "VIEWER" | "CUSTOMER_SUPPORT";
 interface AuthUser {
   id: string;
   role: StaffRole;
+  firstName: string;
+  lastName: string;
+  email: string;
 }
 
 interface AuthContextType {
