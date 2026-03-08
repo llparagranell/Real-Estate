@@ -1,88 +1,86 @@
+ "use client";
+
+import { useEffect, useState } from "react";
 import { columns } from "@/components/Financials/financialColumns";
 import { FinancialsDataTable } from "@/components/Financials/financialsDatatable";
 import FinancialsTopBar from "@/components/Financials/financialsTopBar";
-// import FinancialsDataTable from "@components/Financials/financialsDatatable"
 import { financeTableInterface } from "@/components/Financials/financialColumns";
+import { api } from "@/lib/api";
 
-async function getFinancials(): Promise<financeTableInterface[]> {
-    // const response = await axios.get("https://api.example.com/role-management")
-    // const data = await response.json()
-    // return data
-    return [
-        
-            {
-              userName: "Uday Kumar",
-              purpose: "3 BHK Flat in Arera Colony",
-              staffHandler: "Rajun Kumar",
-              amount: "10000",
-              details: "12th Feb, 2025",
-              status: "Completed",
-            },
-            {
-              userName: "Ankit Sharma",
-              purpose: "2 BHK Apartment in MP Nagar",
-              staffHandler: "Priya Verma",
-              amount: "7500",
-              details: "15th Feb, 2025",
-              status: "Pending",
-            },
-            {
-              userName: "Rohit Singh",
-              purpose: "Office Space in Zone 1",
-              staffHandler: "Amit Tiwari",
-              amount: "25000",
-              details: "18th Feb, 2025",
-              status: "Rejected",
-            },
-            {
-              userName: "Sneha Patel",
-              purpose: "Villa in Kolar Road",
-              staffHandler: "Rajun Kumar",
-              amount: "50000",
-              details: "20th Feb, 2025",
-              status: "Completed",
-            },
-            {
-              userName: "Vikram Joshi",
-              purpose: "1 BHK Rental in Govindpura",
-              staffHandler: "Neha Singh",
-              amount: "6000",
-              details: "22nd Feb, 2025",
-              status: "Pending",
-            },
-            {
-              userName: "Megha Rao",
-              purpose: "Commercial Shop in New Market",
-              staffHandler: "Amit Tiwari",
-              amount: "18000",
-              details: "24th Feb, 2025",
-              status: "Completed",
-            },
-            {
-              userName: "Arjun Mehta",
-              purpose: "Plot Purchase in Hoshangabad Road",
-              staffHandler: "Priya Verma",
-              amount: "40000",
-              details: "26th Feb, 2025",
-              status: "Rejected",
-            },
-            {
-              userName: "Kunal Deshmukh",
-              purpose: "2 BHK Flat in Bawadia Kalan",
-              staffHandler: "Neha Singh",
-              amount: "12000",
-              details: "28th Feb, 2025",
-              status: "Completed",
-            },
-          
-    ]
-}
-export default async function FinancialsPage() {
-    const data = await getFinancials();
+type TransactionsResponse = {
+    success: boolean;
+    data: Array<{
+        id: string;
+        user: string;
+        reason: string;
+        amount: number;
+        createdAt: string;
+        details: {
+            txnType: "CREDIT" | "DEBIT";
+            balanceBefore: number;
+            balanceAfter: number;
+        };
+        staffHandler: string;
+    }>;
+};
+
+const toTitleCase = (value: string) =>
+    value
+        .toLowerCase()
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+
+export default function FinancialsPage() {
+    const [data, setData] = useState<financeTableInterface[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchFinancials = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+                const response = await api.get<TransactionsResponse>("/staff/gems/transactions", {
+                    params: { page: 1, limit: 100 },
+                });
+
+                if (!isMounted) return;
+
+                const mapped = response.data.data.map((txn) => ({
+                    userName: txn.user,
+                    purpose: toTitleCase(txn.reason),
+                    staffHandler: txn.staffHandler,
+                    amount: txn.amount.toLocaleString(),
+                    details: new Date(txn.createdAt).toLocaleString(),
+                    status: txn.details.txnType === "CREDIT" ? "Completed" : "Pending",
+                }));
+
+                setData(mapped);
+            } catch (err) {
+                if (!isMounted) return;
+                console.error("Failed to fetch gem transactions:", err);
+                setError("Failed to load transaction history");
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        fetchFinancials();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
     return (
         <div className="mt-4">
             <FinancialsTopBar />
-            <FinancialsDataTable columns={columns} data={data} />
+            {isLoading && <p className="text-sm text-gray-500 px-4 mt-4">Loading transaction history...</p>}
+            {error && <p className="text-sm text-red-500 px-4 mt-4">{error}</p>}
+            {!isLoading && !error && <FinancialsDataTable columns={columns} data={data} />}
         </div>
     )
 }

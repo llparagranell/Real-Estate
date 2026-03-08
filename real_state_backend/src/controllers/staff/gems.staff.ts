@@ -694,3 +694,80 @@ export async function rejectGemRequest(req: Request, res: Response) {
 //         return res.status(500).json({ message: "Internal server error" });
 //     }
 // }
+
+export async function allGemTransactionHistory(req: Request, res: Response) {
+    try {
+        const staffId = req.user?.id;
+        const role = req.user?.role;
+        if (!staffId || !role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        if (!["ADMIN", "SUPER_ADMIN"].includes(role)) {
+            return res.status(403).json({ message: "Forbidden" });
+        }
+
+        const page = Math.max(Number(req.query.page ?? 1), 1);
+        const limit = Math.min(Math.max(Number(req.query.limit ?? 10), 1), 100);
+        const skip = (page - 1) * limit;
+
+        const [transactions, total] = await Promise.all([
+            prisma.gemTransaction.findMany({
+                skip,
+                take: limit,
+                orderBy: { createdAt: "desc" },
+                select: {
+                    id: true,
+                    reason: true,
+                    amount: true,
+                    createdAt: true,
+                    txnType: true,
+                    balanceBefore: true,
+                    balanceAfter: true,
+                    user: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                        },
+                    },
+                    createdByStaff: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                        },
+                    },
+                },
+            }),
+            prisma.gemTransaction.count(),
+        ]);
+
+        const data = transactions.map((txn) => ({
+            id: txn.id,
+            user: `${txn.user.firstName} ${txn.user.lastName}`.trim(),
+            reason: txn.reason,
+            amount: txn.amount,
+            createdAt: txn.createdAt,
+            details: {
+                txnType: txn.txnType,
+                balanceBefore: txn.balanceBefore,
+                balanceAfter: txn.balanceAfter,
+            },
+            staffHandler: txn.createdByStaff
+                ? `${txn.createdByStaff.firstName} ${txn.createdByStaff.lastName}`.trim()
+                : "SYSTEM",
+        }));
+
+        return res.status(200).json({
+            success: true,
+            data,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        });
+    } catch (error) {
+        console.error("All gem transaction history error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
