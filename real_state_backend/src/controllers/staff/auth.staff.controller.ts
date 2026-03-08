@@ -343,8 +343,29 @@ export async function me(req: Request, res: Response) {
         if (!user) {
             return res.status(401).json({ error: "Not authenticated" });
         }
+        const profile =
+            user.role === "SUPER_ADMIN"
+                ? await prisma.superAdmin.findUnique({
+                    where: { id: user.id },
+                    select: { firstName: true, lastName: true, email: true },
+                })
+                : await prisma.staff.findUnique({
+                    where: { id: user.id },
+                    select: { firstName: true, lastName: true, email: true },
+                });
+
+        if (!profile) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
         return res.status(200).json({
-            user: { id: user.id, role: user.role },
+            user: {
+                id: user.id,
+                role: user.role,
+                firstName: profile.firstName ?? "",
+                lastName: profile.lastName ?? "",
+                email: profile.email,
+            },
         });
     } catch (error) {
         console.error("me error:", error);

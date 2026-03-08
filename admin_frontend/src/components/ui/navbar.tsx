@@ -5,8 +5,11 @@ import { LogOut } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "./button";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 export const Navbar = () => {
     const router = useRouter();
+    const { user } = useAuth();
+    const fullName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
 
     const signout = async () => {
         try {
@@ -27,7 +30,7 @@ export const Navbar = () => {
 
                 <div className="flex items-center justify-center gap-3">
                     <div className="text-xl font-medium">
-                        Hi, John Doe
+                        Hi, {fullName || "User"}
                     </div>
                     <Avatar className="h-12 w-12">
                         <AvatarImage src="https://github.com/shadcn.png" />
