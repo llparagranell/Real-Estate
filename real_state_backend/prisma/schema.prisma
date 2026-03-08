@@ -84,6 +84,7 @@ model User {
 
   //verification
   isEmailVerified Boolean @default(false)
+  isVerifiedSeller Boolean @default(false)
 
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
