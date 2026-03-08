@@ -118,12 +118,12 @@ export async function blockUser(req: Request, res: Response) {
     }
 }
 
-export async function updateUser(req: Request, res: Response) {
-    try {
-        const { id } = req.params;
-        const { firstName, lastName,age, gender, email, phone, sponsorCode, isBlocked, blockedBy, blockedOn } = req.body;
-        await prisma.user.update({
-            where: { id: id as string },
-            data: { firstName, lastName, email, phone, isBlocked, blockedBy, blockedOn },
-        });
-    }
+// export async function updateUser(req: Request, res: Response) {
+//     try {
+//         const { id } = req.params;
+//         const { firstName, lastName,age, gender, email, phone, sponsorCode, isBlocked, blockedBy, blockedOn } = req.body;
+//         await prisma.user.update({
+//             where: { id: id as string },
+//             data: { firstName, lastName, email, phone, isBlocked, blockedBy, blockedOn },
+//         });
+//     }
