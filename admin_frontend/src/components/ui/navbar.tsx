@@ -31,7 +31,7 @@ export const Navbar = () => {
                 <div className="flex items-center justify-center gap-3">
                     <div className="text-xl font-medium">
                         Hi, {fullName || "User"}
-                    </div>
+                                                                                                                                                                                                                                                                                     </div>
                     <Avatar className="h-12 w-12">
                         <AvatarImage src="https://github.com/shadcn.png" />
                         <AvatarFallback>CN</AvatarFallback>
