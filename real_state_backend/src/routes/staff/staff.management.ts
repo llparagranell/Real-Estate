@@ -1,5 +1,5 @@
 import express from "express";
-import { createStaff, updateStaff } from "../../controllers/staff/staff.management.controller";
+import { createStaff, updateStaff, getStaffById } from "../../controllers/staff/staff.management.controller";
 import { authMiddleware } from "../../middleware/auth";
 import { requireSuperAdmin } from "../../middleware/staff";
 import { validate } from "../../middleware/validate";
@@ -8,8 +8,9 @@ import { getAllStaffs } from "../../controllers/staff/staff.management.controlle
 const router = express.Router();
 
 router.post('/create-staff',authMiddleware,requireSuperAdmin,validate(createStaffSchema),createStaff);
-router.put('/update-staff',authMiddleware,requireSuperAdmin,validate(updateStaffSchema),updateStaff);
+router.put('/update-staff/:id',authMiddleware,requireSuperAdmin,validate(updateStaffSchema),updateStaff);
 router.get('/get-staffs',authMiddleware,requireSuperAdmin,getAllStaffs);
+router.get('/get-staff/:id',authMiddleware,requireSuperAdmin,getStaffById);
 // router.put('/block', blockStaff);
 
 export default router;

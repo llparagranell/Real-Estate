@@ -7,6 +7,7 @@ import { Eye, Pencil, Trash2, OctagonMinus } from "lucide-react"
 import { ArrowUpDown } from "lucide-react"
 
 export type RoleManagement = {
+    id: string;
     username: string;
     email: string;
     role: string;
@@ -76,16 +77,16 @@ export const columns: ColumnDef<RoleManagement>[] = [
 
             return (
                 <div className="flex items-center gap-1">
-                    <Button
+                    {/* <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-100"
                         onClick={() => console.log("View", user)}
                     >
                         <Eye className="size-4" />
-                    </Button>
+                    </Button> */}
                     <Link
-                        href={`/role-management/edit-staff/1`}
+                        href={`/role-management/edit-staff/${user.id}`}
                         className="inline-flex items-center justify-center h-8 w-8 rounded-md text-amber-600 hover:text-amber-800 hover:bg-amber-100"
                     >
                         <Pencil className="size-4" />

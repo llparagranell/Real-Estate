@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { ParkingCircle } from "lucide-react"
 import { PropertyImageCarousel } from "@/components/propertyDetails/propertyImageCarousel"
+import type { PropertyDisplayStatus } from "@/components/propertyDetails/propertyImageCarousel"
 import { PropertyBrokerInfo } from "@/components/propertyDetails/propertyBrokerInfo"
 import { PropertyActionBar } from "@/components/propertyDetails/propertyActionBar"
 import { PropertyDetailsPanel } from "@/components/propertyDetails/propertyDetailsPanel"
@@ -12,6 +13,8 @@ import type { BrokerInfoData } from "@/components/propertyDetails/propertyBroker
 import type { PropertyDetailsPanelData } from "@/components/propertyDetails/propertyDetailsPanel"
 import { api } from "@/lib/api"
 import { fetchBookmarkedPropertyIds, toggleBookmark } from "@/lib/bookmarks"
+
+const SOLD_STATUSES = ["SOLDOFFLINE", "SOLDTOREALBRO", "SOLDFROMLISTINGS", "SOLDEXCLUSIVEPROPERTY"]
 
 type PropertyResponse = {
     success: boolean
@@ -93,41 +96,34 @@ export default function PropertyPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    const loadProperty = useCallback(async () => {
+        if (!propertyId) return
+        try {
+            setIsLoading(true)
+            setError(null)
+            const [response, bookmarkIds] = await Promise.all([
+                api.get<PropertyResponse>(`/staff/properties/${propertyId}`),
+                fetchBookmarkedPropertyIds(),
+            ])
+            setProperty(response.data.data)
+            setIsBookmarked(bookmarkIds.has(propertyId))
+        } catch (err) {
+            setError("Failed to load property details")
+            console.error("Failed to fetch property details:", err)
+        } finally {
+            setIsLoading(false)
+        }
+    }, [propertyId])
+
     useEffect(() => {
         if (!propertyId) {
             setError("Invalid property id")
             return
         }
-
         let isMounted = true
-
-        const loadProperty = async () => {
-            try {
-                setIsLoading(true)
-                setError(null)
-                const [response, bookmarkIds] = await Promise.all([
-                    api.get<PropertyResponse>(`/staff/properties/${propertyId}`),
-                    fetchBookmarkedPropertyIds(),
-                ])
-                if (!isMounted) return
-                setProperty(response.data.data)
-                setIsBookmarked(bookmarkIds.has(propertyId))
-            } catch (err) {
-                if (!isMounted) return
-                setError("Failed to load property details")
-                console.error("Failed to fetch property details:", err)
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false)
-                }
-            }
-        }
-
-        loadProperty()
-        return () => {
-            isMounted = false
-        }
-    }, [propertyId])
+        loadProperty().finally(() => { isMounted = false })
+        return () => { isMounted = false }
+    }, [propertyId, loadProperty])
 
     const handleToggleBookmark = async () => {
         if (!property) return
@@ -141,6 +137,52 @@ export default function PropertyPage() {
             console.error("Failed to toggle bookmark:", err)
         }
     }
+
+    const handleListUnlist = async () => {
+        if (!property) return
+        const nextStatus = property.status === "ACTIVE" ? "UNLISTED" : "ACTIVE"
+        try {
+            await api.put(`/staff/properties/${property.id}/status`, { status: nextStatus })
+            await loadProperty()
+        } catch (err) {
+            console.error("Failed to update listing status:", err)
+        }
+    }
+
+    const handleMarkSold = async () => {
+        if (!property) return
+        const isExclusive = Boolean(property.exclusiveProperty)
+        const isCurrentlySold = SOLD_STATUSES.includes(property.status) || property.exclusiveProperty?.status === "SOLD_OUT"
+        try {
+            if (isExclusive) {
+                const nextStatus = isCurrentlySold ? "ACTIVE" : "SOLD_OUT"
+                await api.put(`/staff/properties/${property.id}/status`, { status: nextStatus, target: "exclusive" })
+            } else {
+                const nextStatus = isCurrentlySold ? "ACTIVE" : "SOLDOFFLINE"
+                await api.put(`/staff/properties/${property.id}/status`, { status: nextStatus })
+            }
+            await loadProperty()
+        } catch (err) {
+            console.error("Failed to update sold status:", err)
+        }
+    }
+
+    const handleBuy = async () => {
+        if (!property) return
+        try {
+            await api.post("/staff/properties/acquisition-request", { propertyId: property.id })
+            await loadProperty()
+        } catch (err) {
+            console.error("Failed to submit acquisition request:", err)
+        }
+    }
+
+    const displayStatus: PropertyDisplayStatus = useMemo(() => {
+        if (!property) return "AVAILABLE"
+        if (property.status === "UNLISTED") return "UNLISTED"
+        if (SOLD_STATUSES.includes(property.status) || property.exclusiveProperty?.status === "SOLD_OUT") return "SOLD"
+        return "AVAILABLE"
+    }, [property])
 
     const images = useMemo(() => {
         if (!property?.media?.length) return [FALLBACK_IMAGE]
@@ -180,6 +222,7 @@ export default function PropertyPage() {
             SOLDOFFLINE: "Sold",
             SOLDTOREALBRO: "Sold",
             SOLDFROMLISTINGS: "Sold",
+            SOLDEXCLUSIVEPROPERTY: "Sold",
         }
         const location = [property.subLocality, property.locality, property.city].filter(Boolean).join(", ")
         const areaSqftValue = property.carpetArea ?? property.size ?? 0
@@ -224,14 +267,23 @@ export default function PropertyPage() {
                 <div className="w-1/2">
                     <PropertyImageCarousel
                         images={images}
+                        status={displayStatus}
                         isExclusive={Boolean(property.exclusiveProperty)}
                         gems={property.exclusiveProperty?.fixedRewardGems}
                     />
                     <PropertyBrokerInfo broker={broker} />
                     <PropertyActionBar
-                        variant={property.exclusiveProperty ? "exclusive" : "default"}
-                        isBookmarked={isBookmarked}
+                        isBoughtByRealbro={property.status === "SOLDTOREALBRO"}
+                        isExclusive={Boolean(property.exclusiveProperty)}
+                        exclusivePropertyId={property.exclusiveProperty?.id}
+                        isListed={property.status === "ACTIVE"}
+                        isSold={SOLD_STATUSES.includes(property.status)}
+                        exclusiveStatus={property.exclusiveProperty?.status}
+                        onListUnlist={handleListUnlist}
+                        onMarkSold={handleMarkSold}
+                        onBuy={handleBuy}
                         onBookmark={handleToggleBookmark}
+                        isBookmarked={isBookmarked}
                     />
                 </div>
 

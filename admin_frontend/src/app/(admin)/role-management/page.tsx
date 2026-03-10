@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 type StaffApiItem = {
+    id: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -28,6 +29,7 @@ async function getRoleManagement(): Promise<RoleManagementRow[]> {
     const staffs: StaffApiItem[] = response.data?.staffs ?? [];
 
     return staffs.map((staff) => ({
+        id: staff.id,
         username: `${staff.firstName} ${staff.lastName}`,
         email: staff.email,
         role: formatRole(staff.role),

@@ -35,6 +35,8 @@ import {
 
 export interface PropertyCardData {
     id: string
+    /** When set (e.g. for exclusive listings), use this for /property/:id link instead of id */
+    detailId?: string
     title: string
     location: string
     price: string
@@ -92,9 +94,7 @@ export function PropertyCard({ property, variant = "default", onEdit, onBuy, onM
             setIsSubmittingBuy(false)
         }
     }
-    const propertyDetailsHref = isExclusive
-        ? `/property/exclusive-listings/${property.id}`
-        : `/property/${property.id}`
+    const propertyDetailsHref = `/property/${property.detailId ?? property.id}`
     const handleEditClick = () => {
         if (onEdit) {
             onEdit(property.id)

@@ -6,11 +6,9 @@ import { Filter } from "@/components/appointments/filterAppointments"
 import { ExportButton } from "@/components/role_management/exportButton"
 import { Input } from "@/components/ui/input"
 import { PropertyGrid } from "@/components/properties/propertyGrid"
-import { PendingApprovalList } from "@/components/properties/pendingApprovalList"
 import { Button } from "@/components/ui/button"
 import { ArrowUpDown, ChevronDown } from "lucide-react"
 import type { PropertyCardData } from "@/components/properties/propertyCard"
-import type { PendingApprovalData } from "@/components/properties/pendingApprovalCard"
 import { api } from "@/lib/api"
 
 // const mockPendingExclusiveApprovals: PendingApprovalData[] = [
@@ -38,6 +36,7 @@ type ExclusiveApiRow = {
     createdAt: string
     fixedRewardGems: number
     media: Array<{ url: string }>
+    sourceProperty: { id: string }
 }
 
 export default function ExclusivePropertiesPage() {

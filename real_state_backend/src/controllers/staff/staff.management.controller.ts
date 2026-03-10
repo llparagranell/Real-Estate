@@ -37,15 +37,43 @@ export async function updateStaff(req: Request, res: Response) {
         const { firstName, lastName, age, gender, phone, email, role, password } = req.body as updateStaffInput;
         let passwordHash: string | undefined;
         if (password) {
-            const passwordHash = await hashPassword(password);
+            passwordHash = await hashPassword(password);
         }
         await prisma.staff.update({
             where: { id: id as string },
-            data: { firstName, lastName, age, gender, phone, email, role, passwordHash },
+            data: { firstName, lastName, age, gender, phone, email, role, ...(passwordHash ? { passwordHash } : {}) },
         });
         return res.status(200).json({ message: "Staff updated successfully" });
     } catch (error) {
         console.error("Update staff error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export async function getStaffById(req: Request, res: Response) {
+    try {
+        const { id } = req.params;
+        const staff = await prisma.staff.findUnique({
+            where: { id: id as string },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                age: true,
+                gender: true,
+                phone: true,
+                email: true,
+                role: true,
+                isActive: true,
+                createdAt: true,
+            },
+        });
+        if (!staff) {
+            return res.status(404).json({ message: "Staff not found" });
+        }
+        return res.status(200).json({ staff });
+    } catch (error) {
+        console.error("Get staff by id error:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 };

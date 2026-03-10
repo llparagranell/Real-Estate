@@ -1,5 +1,5 @@
 import express from "express";
-import { addBookMark, removeBookMark, getBookMarks, acquisitionRequest, acquisitionRequestApproval, createExclusiveProperty, updateExclusiveProperty, getAllProperties, getAllExclusiveProperties, getProperty, getExclusiveProperty } from "../../controllers/staff/properties.staff";
+import { addBookMark, removeBookMark, getBookMarks, acquisitionRequest, acquisitionRequestApproval, createExclusiveProperty, updateExclusiveProperty, getAllProperties, getAllExclusiveProperties, getProperty, getExclusiveProperty, updatePropertyStatus } from "../../controllers/staff/properties.staff";
 import { authMiddleware } from "../../middleware/auth";
 import { requireAdminOrSuperAdmin, requireSupportOrAbove, requireSuperAdmin } from "../../middleware/staff";
 import { validate } from "../../middleware/validate";
@@ -18,5 +18,6 @@ router.post("/acquisition-request", authMiddleware, requireAdminOrSuperAdmin, ac
 router.post("/acquisition-request-approval", authMiddleware, requireSuperAdmin, acquisitionRequestApproval);
 router.post("/:propertyId/exclusive", authMiddleware, requireSuperAdmin, validate(createExclusivePropertySchema), createExclusiveProperty);
 router.put("/exclusive/:exclusivePropertyId", authMiddleware, requireSuperAdmin, validate(updateExclusivePropertySchema), updateExclusiveProperty);
+router.put("/:propertyId/status", authMiddleware, requireAdminOrSuperAdmin, updatePropertyStatus);
 
 export default router;

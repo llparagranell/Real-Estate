@@ -1,8 +1,10 @@
 import { EditStaff } from "@/components/role_management/editStaff";
-export default function EditStaffPage() {
+
+export default async function EditStaffPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     return (
         <div>
-            <EditStaff />
+            <EditStaff staffId={id} />
         </div>
     )
 }

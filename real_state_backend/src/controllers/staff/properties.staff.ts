@@ -560,6 +560,7 @@ export async function getAllProperties(req: Request, res: Response) {
 
         const [properties, total] = await Promise.all([
             prisma.property.findMany({
+                where: { exclusiveProperty: null },
                 skip,
                 take: limit,
                 orderBy: { createdAt: "desc" },
@@ -588,7 +589,7 @@ export async function getAllProperties(req: Request, res: Response) {
                     },
                 },
             }),
-            prisma.property.count(),
+            prisma.property.count({ where: { exclusiveProperty: null } }),
         ]);
 
         const data = properties.map((property) => ({
@@ -673,7 +674,7 @@ export async function getProperty(req: Request, res: Response) {
         if (!propertyId) {
             return res.status(400).json({ message: "propertyId is required" });
         }
-        const property = await prisma.property.findUnique({
+        let property = await prisma.property.findUnique({
             where: { id: propertyId },
             include: {
                 media: true,
@@ -682,11 +683,61 @@ export async function getProperty(req: Request, res: Response) {
             },
         });
         if (!property) {
+            const exclusive = await prisma.exclusiveProperty.findUnique({
+                where: { id: propertyId },
+                select: { sourcePropertyId: true },
+            });
+            if (exclusive) {
+                property = await prisma.property.findUnique({
+                    where: { id: exclusive.sourcePropertyId },
+                    include: {
+                        media: true,
+                        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+                        exclusiveProperty: { select: { id: true, status: true, fixedRewardGems: true } },
+                    },
+                });
+            }
+        }
+        if (!property) {
             return res.status(404).json({ message: "Property not found" });
         }
         return res.status(200).json({ success: true, data: property });
     } catch (error) {
         console.error("Get property error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function updatePropertyStatus(req: Request, res: Response) {
+    try {
+        const role = req.user?.role;
+        if (!req.user?.id || !role) return res.status(401).json({ message: "Unauthorized" });
+        if (!["ADMIN", "SUPER_ADMIN"].includes(role)) return res.status(403).json({ message: "Forbidden" });
+
+        const { propertyId } = req.params as { propertyId: string };
+        const { status, target } = req.body as { status?: string; target?: "property" | "exclusive" };
+        if (!propertyId || !status) return res.status(400).json({ message: "propertyId and status are required" });
+
+        const validPropertyStatuses = ["ACTIVE", "UNLISTED", "SOLDOFFLINE", "SOLDTOREALBRO", "SOLDFROMLISTINGS", "DRAFT", "SOLDEXCLUSIVEPROPERTY"];
+        const validExclusiveStatuses = ["ACTIVE", "SOLD_OUT", "ARCHIVED"];
+
+        const property = await prisma.property.findUnique({ where: { id: propertyId }, select: { id: true, exclusiveProperty: { select: { id: true } } } });
+        if (!property) return res.status(404).json({ message: "Property not found" });
+
+        if (target === "exclusive" && validExclusiveStatuses.includes(status) && property.exclusiveProperty) {
+            await prisma.exclusiveProperty.update({
+                where: { id: property.exclusiveProperty.id },
+                data: { status: status as "ACTIVE" | "SOLD_OUT" | "ARCHIVED" },
+            });
+            return res.status(200).json({ success: true, message: "Exclusive property status updated" });
+        }
+        if (validPropertyStatuses.includes(status)) {
+            await prisma.property.update({ where: { id: propertyId }, data: { status: status as "ACTIVE" | "UNLISTED" | "SOLDOFFLINE" | "SOLDTOREALBRO" | "SOLDFROMLISTINGS" | "DRAFT" | "SOLDEXCLUSIVEPROPERTY" } });
+            return res.status(200).json({ success: true, message: "Property status updated" });
+        }
+        return res.status(400).json({ message: "Invalid status" });
+    } catch (error) {
+        console.error("Update property status error:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 }
