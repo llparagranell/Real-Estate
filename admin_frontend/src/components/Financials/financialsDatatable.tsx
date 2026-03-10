@@ -31,12 +31,19 @@ import { Search } from "lucide-react";
 import { DataTablePagination } from "../ui/data-table-pagination"
 import { ExportButton, type ExportColumn } from "../role_management/exportButton"
 import { Filter } from "./filter";
-import { FilterTimelineButton } from "./filterTimelineButton";
+import { FilterTimelineButton, type DateFilterParams } from "./filterTimelineButton";
+
+interface FinancialsDataTableProps<TData, TValue> extends DataTableProps<TData, TValue> {
+    onDateFilterChange?: (params: DateFilterParams | null) => void
+    activeDateFilter?: DateFilterParams | null
+}
 
 export function FinancialsDataTable<TData, TValue>({
     columns,
     data,
-}: DataTableProps<TData, TValue>) {
+    onDateFilterChange,
+    activeDateFilter,
+}: FinancialsDataTableProps<TData, TValue>) {
     const [globalFilter, setGlobalFilter] = React.useState("");
     const [sorting, setSorting] = React.useState<SortingState>([])
 
@@ -102,7 +109,10 @@ export function FinancialsDataTable<TData, TValue>({
                         columns={financialsExportColumns}
                         filename="financials-transactions"
                     />
-                    <FilterTimelineButton/>
+                    <FilterTimelineButton
+                        onDateFilterChange={onDateFilterChange ?? undefined}
+                        activeFilter={activeDateFilter ?? undefined}
+                    />
                     <Filter/>
 
                 </div>

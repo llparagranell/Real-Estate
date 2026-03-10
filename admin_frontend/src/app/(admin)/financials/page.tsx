@@ -6,6 +6,7 @@ import { FinancialsDataTable } from "@/components/Financials/financialsDatatable
 import FinancialsTopBar from "@/components/Financials/financialsTopBar";
 import { financeTableInterface } from "@/components/Financials/financialColumns";
 import { api } from "@/lib/api";
+import type { DateFilterParams } from "@/components/Financials/filterTimelineButton";
 
 type TransactionsResponse = {
     success: boolean;
@@ -35,6 +36,7 @@ export default function FinancialsPage() {
     const [data, setData] = useState<financeTableInterface[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [dateFilter, setDateFilter] = useState<DateFilterParams | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -43,8 +45,18 @@ export default function FinancialsPage() {
             try {
                 setIsLoading(true);
                 setError(null);
+                const params: Record<string, string | number> = {
+                    page: 1,
+                    limit: 100,
+                };
+                if (dateFilter?.date) {
+                    params.date = dateFilter.date;
+                } else if (dateFilter?.startDate && dateFilter?.endDate) {
+                    params.startDate = dateFilter.startDate;
+                    params.endDate = dateFilter.endDate;
+                }
                 const response = await api.get<TransactionsResponse>("/staff/gems/transactions", {
-                    params: { page: 1, limit: 100 },
+                    params,
                 });
 
                 if (!isMounted) return;
@@ -75,14 +87,21 @@ export default function FinancialsPage() {
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, [dateFilter]);
 
     return (
         <div className="mt-4">
             <FinancialsTopBar />
             {isLoading && <p className="text-sm text-gray-500 px-4 mt-4">Loading transaction history...</p>}
             {error && <p className="text-sm text-red-500 px-4 mt-4">{error}</p>}
-            {!isLoading && !error && <FinancialsDataTable columns={columns} data={data} />}
+            {!isLoading && !error && (
+                <FinancialsDataTable
+                    columns={columns}
+                    data={data}
+                    onDateFilterChange={setDateFilter}
+                    activeDateFilter={dateFilter}
+                />
+            )}
         </div>
     )
 }

@@ -723,8 +723,41 @@ export async function allGemTransactionHistory(req: Request, res: Response) {
         const limit = Math.min(Math.max(Number(req.query.limit ?? 10), 1), 100);
         const skip = (page - 1) * limit;
 
+        const date = req.query.date as string | undefined;
+        const startDate = req.query.startDate as string | undefined;
+        const endDate = req.query.endDate as string | undefined;
+
+        const createdAtFilter: { gte?: Date; lte?: Date } = {};
+        if (date) {
+            const d = new Date(date);
+            if (!isNaN(d.getTime())) {
+                const start = new Date(d);
+                start.setUTCHours(0, 0, 0, 0);
+                const end = new Date(d);
+                end.setUTCHours(23, 59, 59, 999);
+                createdAtFilter.gte = start;
+                createdAtFilter.lte = end;
+            }
+        } else if (startDate && endDate) {
+            const s = new Date(startDate);
+            const e = new Date(endDate);
+            if (!isNaN(s.getTime())) {
+                s.setUTCHours(0, 0, 0, 0);
+                createdAtFilter.gte = s;
+            }
+            if (!isNaN(e.getTime())) {
+                e.setUTCHours(23, 59, 59, 999);
+                createdAtFilter.lte = e;
+            }
+        }
+
+        const where = Object.keys(createdAtFilter).length > 0
+            ? { createdAt: createdAtFilter }
+            : {};
+
         const [transactions, total] = await Promise.all([
             prisma.gemTransaction.findMany({
+                where,
                 skip,
                 take: limit,
                 orderBy: { createdAt: "desc" },
@@ -756,7 +789,7 @@ export async function allGemTransactionHistory(req: Request, res: Response) {
                     },
                 },
             }),
-            prisma.gemTransaction.count(),
+            prisma.gemTransaction.count({ where }),
         ]);
 
         const data = transactions.map((txn) => ({
