@@ -518,6 +518,119 @@ export async function updateExclusiveProperty(req: Request, res: Response) {
     }
 }
 
+export async function getPendingApprovalProperties(req: Request, res: Response) {
+    try {
+        if (!req.user?.id || !req.user?.role) return res.status(401).json({ message: "Unauthorized" });
+        const page = Math.max(Number(req.query.page ?? 1), 1);
+        const limit = Math.min(Math.max(Number(req.query.limit ?? 50), 1), 100);
+        const skip = (page - 1) * limit;
+
+        const formatFurnishing = (v?: string | null) => (v ? v.replace(/([a-z])([A-Z])/g, "$1 $2") : "N/A");
+        const formatPostedDate = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+        const formatArea = (area?: string | null, carpetArea?: number | null, carpetAreaUnit?: string | null) => (area || (carpetArea != null ? `${carpetArea} ${carpetAreaUnit ?? ""}`.trim() : "N/A"));
+        const formatLocation = (sub?: string | null, loc?: string | null, city?: string | null) => [sub, loc, city].filter(Boolean).join(", ") || "N/A";
+
+        const [properties, total] = await Promise.all([
+            prisma.property.findMany({
+                where: { acquisitionRequests: { some: { status: "PENDING" } } },
+                skip,
+                take: limit,
+                orderBy: { createdAt: "desc" },
+                select: {
+                    id: true, title: true, listingPrice: true, area: true, carpetArea: true, carpetAreaUnit: true,
+                    numberOfRooms: true, numberOfBathrooms: true, numberOfBalcony: true, numberOfFloors: true,
+                    furnishingStatus: true, status: true, createdAt: true, subLocality: true, locality: true, city: true,
+                    media: { where: { mediaType: "IMAGE" }, orderBy: { order: "asc" }, take: 1, select: { url: true } },
+                },
+            }),
+            prisma.property.count({ where: { acquisitionRequests: { some: { status: "PENDING" } } } }),
+        ]);
+
+        const data = properties.map((p) => ({
+            id: p.id,
+            title: p.title,
+            location: formatLocation(p.subLocality, p.locality, p.city),
+            price: p.listingPrice != null ? String(p.listingPrice) : "N/A",
+            area: formatArea(p.area, p.carpetArea, p.carpetAreaUnit),
+            bedrooms: p.numberOfRooms ?? 0,
+            bathrooms: p.numberOfBathrooms ?? 0,
+            balconies: p.numberOfBalcony ?? 0,
+            floors: p.numberOfFloors ?? 0,
+            furnishing: formatFurnishing(p.furnishingStatus),
+            status: "Pending" as const,
+            imageUrl: p.media[0]?.url ?? "/largeBuilding2.png",
+            postedDate: formatPostedDate(p.createdAt),
+        }));
+
+        return res.status(200).json({ success: true, data, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
+    } catch (error) {
+        console.error("Get pending approval properties error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function getPendingExclusiveProperties(req: Request, res: Response) {
+    try {
+        if (!req.user?.id || !req.user?.role) return res.status(401).json({ message: "Unauthorized" });
+        if (req.user.role !== "SUPER_ADMIN") return res.status(403).json({ message: "Forbidden" });
+
+        const page = Math.max(Number(req.query.page ?? 1), 1);
+        const limit = Math.min(Math.max(Number(req.query.limit ?? 50), 1), 100);
+        const skip = (page - 1) * limit;
+
+        const formatStatus = (s: string) => (s === "ACTIVE" ? "Active" : s === "UNLISTED" ? "Unlisted" : s === "DRAFT" || s === "UNDER_ACQUISITION" ? "Pending" : "Sold");
+        const formatFurnishing = (v?: string | null) => (v ? v.replace(/([a-z])([A-Z])/g, "$1 $2") : "N/A");
+        const formatPostedDate = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+        const formatArea = (area?: string | null, carpetArea?: number | null, carpetAreaUnit?: string | null) => (area || (carpetArea != null ? `${carpetArea} ${carpetAreaUnit ?? ""}`.trim() : "N/A"));
+        const formatLocation = (sub?: string | null, loc?: string | null, city?: string | null) => [sub, loc, city].filter(Boolean).join(", ") || "N/A";
+
+        const [properties, total] = await Promise.all([
+            prisma.property.findMany({
+                where: {
+                    acquisitionRequests: { some: { status: "APPROVED" } },
+                    exclusiveProperty: null,
+                },
+                skip,
+                take: limit,
+                orderBy: { createdAt: "desc" },
+                select: {
+                    id: true, title: true, listingPrice: true, area: true, carpetArea: true, carpetAreaUnit: true,
+                    numberOfRooms: true, numberOfBathrooms: true, numberOfBalcony: true, numberOfFloors: true,
+                    furnishingStatus: true, status: true, createdAt: true, subLocality: true, locality: true, city: true,
+                    media: { where: { mediaType: "IMAGE" }, orderBy: { order: "asc" }, take: 1, select: { url: true } },
+                },
+            }),
+            prisma.property.count({
+                where: {
+                    acquisitionRequests: { some: { status: "APPROVED" } },
+                    exclusiveProperty: null,
+                },
+            }),
+        ]);
+
+        const data = properties.map((p) => ({
+            id: p.id,
+            title: p.title,
+            location: formatLocation(p.subLocality, p.locality, p.city),
+            price: p.listingPrice != null ? String(p.listingPrice) : "N/A",
+            area: formatArea(p.area, p.carpetArea, p.carpetAreaUnit),
+            bedrooms: p.numberOfRooms ?? 0,
+            bathrooms: p.numberOfBathrooms ?? 0,
+            balconies: p.numberOfBalcony ?? 0,
+            floors: p.numberOfFloors ?? 0,
+            furnishing: formatFurnishing(p.furnishingStatus),
+            status: formatStatus(p.status),
+            imageUrl: p.media[0]?.url ?? "/largeBuilding2.png",
+            postedDate: formatPostedDate(p.createdAt),
+        }));
+
+        return res.status(200).json({ success: true, data, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
+    } catch (error) {
+        console.error("Get pending exclusive properties error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
 export async function getAllProperties(req: Request, res: Response) {
     try {
         if (!req.user?.id || !req.user?.role) {

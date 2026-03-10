@@ -1,5 +1,5 @@
 import express from "express";
-import { addBookMark, removeBookMark, getBookMarks, acquisitionRequest, acquisitionRequestApproval, createExclusiveProperty, updateExclusiveProperty, getAllProperties, getAllExclusiveProperties, getProperty, getExclusiveProperty, updatePropertyStatus } from "../../controllers/staff/properties.staff";
+import { addBookMark, removeBookMark, getBookMarks, acquisitionRequest, acquisitionRequestApproval, createExclusiveProperty, updateExclusiveProperty, getAllProperties, getAllExclusiveProperties, getProperty, getExclusiveProperty, updatePropertyStatus, getPendingApprovalProperties, getPendingExclusiveProperties } from "../../controllers/staff/properties.staff";
 import { authMiddleware } from "../../middleware/auth";
 import { requireAdminOrSuperAdmin, requireSupportOrAbove, requireSuperAdmin } from "../../middleware/staff";
 import { validate } from "../../middleware/validate";
@@ -9,6 +9,8 @@ const router = express.Router();
 
 router.get("/", authMiddleware, requireSupportOrAbove, getAllProperties);
 router.get("/bookmarks", authMiddleware, requireSupportOrAbove, getBookMarks);
+router.get("/pending-approvals", authMiddleware, requireSupportOrAbove, getPendingApprovalProperties);
+router.get("/pending-exclusive", authMiddleware, requireSuperAdmin, getPendingExclusiveProperties);
 router.get("/exclusive", authMiddleware, requireSupportOrAbove, getAllExclusiveProperties);
 router.get("/exclusive/:exclusivePropertyId", authMiddleware, requireSupportOrAbove, getExclusiveProperty);
 router.get("/:propertyId", authMiddleware, requireSupportOrAbove, getProperty);
