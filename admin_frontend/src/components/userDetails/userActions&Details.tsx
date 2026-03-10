@@ -1,8 +1,11 @@
-import { Building2, Gem, Handshake, IndianRupee, Mail, PenLine, PhoneCallIcon } from "lucide-react";
+"use client";
+
+import { Building2, Gem, Handshake, IndianRupee, PenLine } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { OctagonMinus, BadgeCheck } from "lucide-react";
 import { UserSellingHistory } from "./userSellingHistory";
+import { SendGemsDialog } from "../shared/sendGemsDialog";
 import type { FullUserData } from "./types";
 import { useRouter } from "next/navigation";
 
@@ -40,10 +43,15 @@ export function UserActionsAndDetails({ user }: { user: FullUserData }) {
                     <OctagonMinus className="size-5 text-orange-500" />
                     Block User
                 </Button>
-                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-zinc-100  shadow-none">
-                    <Gem className="size-5 text-green-500" />
-                    <p>Send Gems</p>
-                </Button>
+                <SendGemsDialog
+                    prefillEmail={user.email}
+                    trigger={
+                        <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-zinc-100 shadow-none">
+                            <Gem className="size-5 text-green-500" />
+                            <p>Send Gems</p>
+                        </Button>
+                    }
+                />
                 <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-zinc-100   shadow-none"
                 onClick={() => router.push(`/user/edit/${user.id}`)}
                 >

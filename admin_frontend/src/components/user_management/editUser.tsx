@@ -2,6 +2,14 @@
 import { useRef, useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { api } from "@/lib/api"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../ui/card"
 import { FieldLabel } from "../ui/field"
 import { Input } from "../ui/input"
@@ -95,6 +103,7 @@ export function EditUser() {
     const [isVerifiedSeller, setIsVerifiedSeller] = useState(false)
     const [aadharStatus, setAadharStatus] = useState<KycItem["status"] | "">("")
     const [panStatus, setPanStatus] = useState<KycItem["status"] | "">("")
+    const [confirmOpen, setConfirmOpen] = useState(false)
 
     useEffect(() => {
         if (!userId) return
@@ -420,7 +429,7 @@ export function EditUser() {
                     </Button>
                     <Button
                         className="gap-2 bg-blue-500 hover:bg-blue-700 text-white"
-                        onClick={handleSubmit}
+                        onClick={() => setConfirmOpen(true)}
                         disabled={isSaving}
                     >
                         {isSaving ? (
@@ -432,6 +441,35 @@ export function EditUser() {
                     </Button>
                 </CardFooter>
             </Card>
+
+            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Update</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to update the user?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            className="bg-blue-500 hover:bg-blue-700 text-white"
+                            onClick={async () => {
+                                setConfirmOpen(false)
+                                await handleSubmit()
+                            }}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? (
+                                <Loader2 className="size-4 animate-spin" />
+                            ) : null}
+                            {isSaving ? "Saving..." : "Confirm"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

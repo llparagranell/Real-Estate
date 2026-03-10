@@ -266,13 +266,14 @@ export async function giveAcquisitionRewardToUser(req: Request, res: Response) {
             actorStaffId = requesterStaff.id;
         }
 
-        const { userId, email, baseGems, otpCode, type, comment } = req.body as {
+        const { userId, email, baseGems, otpCode, type, comment, propertyId } = req.body as {
             userId?: string;
             email?: string;
             baseGems?: number;
             otpCode?: string;
             type?: GemRequestType;
             comment?: string;
+            propertyId?: string | null;
         };
 
         if ((!userId && !email) || !baseGems || baseGems <= 0 || !otpCode) {
@@ -323,6 +324,18 @@ export async function giveAcquisitionRewardToUser(req: Request, res: Response) {
         const referralGems = referralUserId ? Math.floor(baseGems * 0.05) : 0;
         const totalGems = baseGems + referralGems;
 
+        let resolvedPropertyId: string | null = null;
+        if (propertyId && typeof propertyId === "string" && propertyId.trim()) {
+            const property = await prisma.property.findUnique({
+                where: { id: propertyId.trim() },
+                select: { id: true },
+            });
+            if (!property) {
+                return res.status(400).json({ message: "Property not found" });
+            }
+            resolvedPropertyId = property.id;
+        }
+
         if (role === "SUPER_ADMIN") {
             const request = await prisma.$transaction(async (tx) => {
                 const createdRequest = await tx.gemRequest.create({
@@ -333,7 +346,7 @@ export async function giveAcquisitionRewardToUser(req: Request, res: Response) {
                         reviewedByStaffId: actorStaffId,
                         userId: targetUserId,
                         referralUserId,
-                        propertyId: null,
+                        propertyId: resolvedPropertyId,
                         baseGems,
                         referralPercent,
                         referralGems,
@@ -402,7 +415,7 @@ export async function giveAcquisitionRewardToUser(req: Request, res: Response) {
                 requestedByStaffId: actorStaffId,
                 userId: targetUserId,
                 referralUserId,
-                propertyId: null,
+                propertyId: resolvedPropertyId,
                 baseGems,
                 referralPercent,
                 referralGems,
