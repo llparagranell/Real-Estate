@@ -29,8 +29,7 @@ import {
 import { Search } from "lucide-react";
 
 import { DataTablePagination } from "../ui/data-table-pagination"
-import { ExportButton } from "../role_management/exportButton";
-import { Button } from "../ui/button";
+import { ExportButton, type ExportColumn } from "../role_management/exportButton"
 import { Filter } from "./filter";
 import { FilterTimelineButton } from "./filterTimelineButton";
 
@@ -71,7 +70,17 @@ export function FinancialsDataTable<TData, TValue>({
                 status.includes(search)
             )
         },
-    });
+    })
+
+    const financialsExportColumns: ExportColumn[] = [
+        { key: "userName", header: "User Name" },
+        { key: "purpose", header: "Purpose" },
+        { key: "staffHandler", header: "Staff Handler" },
+        { key: "amount", header: "Amount" },
+        { key: "details", header: "Details" },
+        { key: "status", header: "Status" },
+    ]
+    const exportData = table.getFilteredRowModel().rows.map((r) => r.original as Record<string, unknown>)
 
     return (
         <div>
@@ -88,7 +97,11 @@ export function FinancialsDataTable<TData, TValue>({
                             className="h-10 pl-9 border-2 bg-white"
                         />
                     </div>
-                    <ExportButton />
+                    <ExportButton
+                        data={exportData}
+                        columns={financialsExportColumns}
+                        filename="financials-transactions"
+                    />
                     <FilterTimelineButton/>
                     <Filter/>
 
