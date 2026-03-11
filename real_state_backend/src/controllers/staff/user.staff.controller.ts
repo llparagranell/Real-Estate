@@ -111,34 +111,45 @@ export async function deleteUser(req: Request, res: Response) {
 export async function blockUser(req: Request, res: Response) {
     try {
         const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const staffId = req.user?.id;
+        const role = req.user?.role;
         const blockedBy = req.user?.id ?? null;
         if (!id) {
             return res.status(400).json({ message: "User id is required" });
         }
+        if (role === "SUPER_ADMIN") {
+            const existingUser = await prisma.user.findUnique({
+                where: { id },
+                select: { id: true, isBlocked: true },
+            });
 
-        const existingUser = await prisma.user.findUnique({
-            where: { id },
-            select: { id: true, isBlocked: true },
-        });
+            if (!existingUser) {
+                return res.status(404).json({ message: "User not found" });
+            }
 
-        if (!existingUser) {
-            return res.status(404).json({ message: "User not found" });
+            if (existingUser.isBlocked) {
+                return res.status(200).json({ message: "User is already blocked" });
+            }
+
+            await prisma.user.update({
+                where: { id },
+                data: {
+                    isBlocked: true,
+                    blockedBy,
+                    blockedOn: new Date(),
+                },
+            });
+
+            return res.status(200).json({ message: "User blocked successfully" });
+        } else if (role === "ADMIN") {
+            await prisma.banRequest.create({
+                data: {
+                    userId: id,
+                    banReqByStaffId: staffId as string,
+                },
+            });
+            return res.status(200).json({ message: "Ban request sent successfully" });
         }
-
-        if (existingUser.isBlocked) {
-            return res.status(200).json({ message: "User is already blocked" });
-        }
-
-        await prisma.user.update({
-            where: { id },
-            data: {
-                isBlocked: true,
-                blockedBy,
-                blockedOn: new Date(),
-            },
-        });
-
-        return res.status(200).json({ message: "User blocked successfully" });
     } catch (error) {
         console.error("Block user error:", error);
         return res.status(500).json({ message: "Internal server error" });
@@ -179,6 +190,56 @@ export async function unblockUser(req: Request, res: Response) {
         console.error("Unblock user error:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
+}
+
+export async function reviewBanRequest(req: Request, res: Response) {
+    const { decision } = req.body as { decision: "APPROVED" | "REJECTED" };
+    const role = req.user?.role;
+    try {
+        if (role !== "SUPER_ADMIN") {
+            return res.status(403).json({ message: "Forbidden" });
+        }
+        const { requestId } = req.params;
+        if (!requestId) {
+            return res.status(400).json({ message: "Request id is required" });
+        }
+        const request = await prisma.banRequest.findUnique({
+            where: { id: requestId as string },
+            select: { id: true, status: true },
+        });
+        if (!request) {
+            return res.status(404).json({ message: "Request not found" });
+        }
+        if (request.status !== "PENDING_SUPERADMIN") {
+            return res.status(400).json({ message: "Request is not pending super admin approval" });
+        }
+        const decision = req.body as { decision: "APPROVED" | "REJECTED" };
+        if (!decision) {
+            return res.status(400).json({ message: "Decision is required" });
+        }
+        if (decision === "APPROVED") {
+            await prisma.banRequest.update({
+                where: { id: requestId as string },
+                data: { status: decision },
+                return res.status(200).json({ message: "Ban request reviewed successfully" });
+            });
+        } else if (decision === "REJECTED") {
+            await prisma.banRequest.update({
+                where: { id: requestId as string },
+                data: { status: decision },
+            });
+
+            return res.status(200).json({ message: "Ban request reviewed successfully" });
+        } else {
+            return res.status(400).json({ message: "Invalid decision" });
+        }
+        return res.status(200).json({ message: "Ban request reviewed successfully" });
+    } catch (error) {
+        console.error("Review ban request error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+
+
 }
 
 export async function getUserForEdit(req: Request, res: Response) {
@@ -327,10 +388,10 @@ export async function updateKycStatus(req: Request, res: Response) {
     }
 }
 
-export async function fullUserDetails(req:Request, res:Response) {
-    try{
-        const {id} = req.params;
-        if(!id){
+export async function fullUserDetails(req: Request, res: Response) {
+    try {
+        const { id } = req.params;
+        if (!id) {
             return res.status(400).json({ message: "User id is required" });
         }
         const user = await prisma.user.findUnique({
@@ -360,8 +421,8 @@ export async function fullUserDetails(req:Request, res:Response) {
                         status: true,
                     }
                 },
-                properties:{
-                    select:{
+                properties: {
+                    select: {
                         id: true,
                         title: true,
                         status: true,
@@ -384,7 +445,7 @@ export async function fullUserDetails(req:Request, res:Response) {
                 }
             }
         })
-        if(!user){
+        if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
@@ -422,8 +483,61 @@ export async function fullUserDetails(req:Request, res:Response) {
                 properties_by_status: grouped,
             },
         });
-    }catch(error){
+    } catch (error) {
         console.error("Full user details error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function getAllBanRequests(req: Request, res: Response) {
+    try {
+        const banRequests = await prisma.banRequest.findMany({
+            where: { status: "PENDING_SUPERADMIN" },
+
+            select: {
+                id: true,
+                status: true,
+                createdAt: true,
+                updatedAt: true,
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        phone: true,
+                        isBlocked: true,
+                        blockedBy: true,
+                        blockedOn: true,
+                        points: true,
+                        isEmailVerified: true,
+                        createdAt: true,
+                        updatedAt: true,
+                        kyc: {
+                            select: {
+                                type: true,
+                                status: true,
+                            }
+                        },
+                        properties: {
+                            select: {
+                                id: true,
+                                status: true,
+                            }
+                        }
+                    }
+                },
+                banReqByStaff: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                    }
+                }
+            },
+        });
+    } catch (error) {
+        console.error("Get all ban requests error:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 }

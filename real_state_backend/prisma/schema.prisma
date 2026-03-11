@@ -36,26 +36,27 @@ enum StaffRole {
 }
 
 model Staff {
-  id                   String           @id @default(cuid())
-  firstName            String
-  lastName             String
-  age                  Int?
-  gender               Gender?
-  phone                String?          @unique
-  email                String           @unique
-  passwordHash         String?
-  role                 StaffRole
-  twoFactorSecret      String?
-  isTwoFactorEnabled   Boolean          @default(false)
-  isActive             Boolean          @default(true)
-  isBlocked            Boolean          @default(false)
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
-  requestedGemRequests GemRequest[]     @relation("GemRequestedBy")
-  reviewedGemRequests  GemRequest[]     @relation("GemReviewedBy")
-  gemTransactions      GemTransaction[] @relation("GemTransactionCreatedBy")
-  staffPropertyBookmarks StaffPropertyBookmark[] 
+  id                          String                       @id @default(cuid())
+  firstName                   String
+  lastName                    String
+  age                         Int?
+  gender                      Gender?
+  phone                       String?                      @unique
+  email                       String                       @unique
+  passwordHash                String?
+  role                        StaffRole
+  twoFactorSecret             String?
+  isTwoFactorEnabled          Boolean                      @default(false)
+  isActive                    Boolean                      @default(true)
+  isBlocked                   Boolean                      @default(false)
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime                     @updatedAt
+  requestedGemRequests        GemRequest[]                 @relation("GemRequestedBy")
+  reviewedGemRequests         GemRequest[]                 @relation("GemReviewedBy")
+  gemTransactions             GemTransaction[]             @relation("GemTransactionCreatedBy")
+  staffPropertyBookmarks      StaffPropertyBookmark[]
   propertyAcquisitionRequests PropertyAcquisitionRequest[] @relation("PropertyAcquisitionRequest")
+  banRequests                 BanRequest[]                 @relation("BanRequestedBy")
 
   @@index([role])
   @@index([isActive])
@@ -64,28 +65,28 @@ model Staff {
 }
 
 model User {
-  id           String  @id @default(cuid())
+  id           String    @id @default(cuid())
   firstName    String
   lastName     String
-  email        String  @unique
-  phone        String  @unique
+  email        String    @unique
+  phone        String    @unique
   password     String
   avatar       String?
   avatarKey    String?
   age          Int?
   gender       Gender?
-  isBlocked    Boolean @default(false)
-  referralCode String  @unique
+  isBlocked    Boolean   @default(false)
+  referralCode String    @unique
   referrerId   String?
-  referrer     User?   @relation("Referrals", references: [id], fields: [referrerId])
-  referrals    User[]  @relation("Referrals") //users referred by User. 
-  points       Int     @default(0) //rename to gems later
+  referrer     User?     @relation("Referrals", references: [id], fields: [referrerId])
+  referrals    User[]    @relation("Referrals") //users referred by User. 
+  points       Int       @default(0) //rename to gems later
   blockedBy    String?
   blockedOn    DateTime?
 
   //verification
-  isEmailVerified Boolean @default(false)
-  isKycVerified Boolean @default(false) //green tick
+  isEmailVerified  Boolean @default(false)
+  isKycVerified    Boolean @default(false) //green tick
   isVerifiedSeller Boolean @default(false) //blue tick
 
   createdAt             DateTime            @default(now())
@@ -101,9 +102,32 @@ model User {
   gemRequestsAsTarget   GemRequest[]        @relation("GemRequestTargetUser")
   gemRequestsAsReferral GemRequest[]        @relation("GemRequestReferralUser")
   exclusiveProperties   ExclusiveProperty[] @relation("ExclusiveOriginalUser")
+  banRequests           BanRequest[]        @relation("BanRequestTargetUser")
 
   @@index([id, email])
   @@map("users")
+}
+
+enum BanRequestStatus {
+  PENDING_SUPERADMIN
+  APPROVED
+  REJECTED
+}
+
+model BanRequest {
+  id              String           @id @default(cuid())
+  userId          String
+  status          BanRequestStatus @default(PENDING_SUPERADMIN)
+  banReqByStaffId String
+  banReqByStaff   Staff            @relation("BanRequestedBy", fields: [banReqByStaffId], references: [id])
+  user            User             @relation("BanRequestTargetUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([status])
+  @@index([userId])
+  @@index([banReqByStaffId])
+  @@map("ban_requests")
 }
 
 //property
@@ -237,15 +261,15 @@ model Property {
   updatedAt DateTime @updatedAt
 
   //Relations
-  userId            String
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  media             PropertyMedia[]
-  savedBy           SavedProperty[]
-  appointments      Appointment[]
-  gemRequests       GemRequest[]       @relation("GemRequestTargetProperty")
-  exclusiveProperty ExclusiveProperty? @relation("ExclusiveSourceProperty")
+  userId                 String
+  user                   User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media                  PropertyMedia[]
+  savedBy                SavedProperty[]
+  appointments           Appointment[]
+  gemRequests            GemRequest[]                 @relation("GemRequestTargetProperty")
+  exclusiveProperty      ExclusiveProperty?           @relation("ExclusiveSourceProperty")
   staffPropertyBookmarks StaffPropertyBookmark[]
-  acquisitionRequests PropertyAcquisitionRequest[] @relation("PropertyAcquisitionRequest")
+  acquisitionRequests    PropertyAcquisitionRequest[] @relation("PropertyAcquisitionRequest")
 
   @@index([userId])
   @@index([propertyType])
@@ -346,10 +370,10 @@ model ExclusiveProperty {
   uncoveredParking   Int             @default(0)
 
   // Exclusive-specific
-  fixedRewardGems   Int
-  migratedAt        DateTime  @default(now())
-  soldOutAt         DateTime?
-  notes             String?
+  fixedRewardGems Int
+  migratedAt      DateTime  @default(now())
+  soldOutAt       DateTime?
+  notes           String?
 
   // Keep owner reference
   originalUserId String
@@ -385,18 +409,18 @@ model ExclusivePropertyMedia {
 }
 
 model StaffPropertyBookmark {
-  id String @id @default(cuid())
-  staffId String
-  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  staffId    String
+  staff      Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
   propertyId String
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([staffId, propertyId])
   @@index([staffId])
   @@index([propertyId])
-  @@map("staff_property_bookmarks") 
+  @@map("staff_property_bookmarks")
 }
 
 enum PropertyAcquisitionRequestStatus {
@@ -406,14 +430,14 @@ enum PropertyAcquisitionRequestStatus {
 }
 
 model PropertyAcquisitionRequest {
-  id String @id @default(cuid())
-  propertyId String @unique
+  id                 String                           @id @default(cuid())
+  propertyId         String                           @unique
   requestedByStaffId String
-  status PropertyAcquisitionRequestStatus @default(PENDING)
-  property Property @relation("PropertyAcquisitionRequest", fields: [propertyId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  requestedByStaff Staff @relation("PropertyAcquisitionRequest", fields: [requestedByStaffId], references: [id], onDelete: Cascade)
+  status             PropertyAcquisitionRequestStatus @default(PENDING)
+  property           Property                         @relation("PropertyAcquisitionRequest", fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt          DateTime                         @default(now())
+  updatedAt          DateTime                         @updatedAt
+  requestedByStaff   Staff                            @relation("PropertyAcquisitionRequest", fields: [requestedByStaffId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
 }
