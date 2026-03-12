@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { ParkingCircle } from "lucide-react"
 import { PropertyImageCarousel } from "@/components/propertyDetails/propertyImageCarousel"
+import { PropertyMap } from "@/components/propertyDetails/propertyMap"
 import type { PropertyDisplayStatus } from "@/components/propertyDetails/propertyImageCarousel"
 import { PropertyBrokerInfo } from "@/components/propertyDetails/propertyBrokerInfo"
 import { PropertyActionBar } from "@/components/propertyDetails/propertyActionBar"
@@ -314,6 +315,11 @@ export default function PropertyPage() {
                             </div>
                         </div>
                     </div>
+                    <PropertyMap
+                        latitude={property.latitude}
+                        longitude={property.longitude}
+                        title={property.title}
+                    />
                 </div>
             </div>
             )}

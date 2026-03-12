@@ -71,6 +71,8 @@ export function PropertyImageCarousel({ images, media, status = "AVAILABLE", isE
                     width={600}
                     height={400}
                     className="w-full h-[340px] object-cover"
+                    loading={currentIndex === 0 ? "eager" : "lazy"}
+                    priority={currentIndex === 0}
                 />
             )}
 

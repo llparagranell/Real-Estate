@@ -809,7 +809,7 @@ export async function getProperty(req: Request, res: Response) {
                     where: { id: exclusive.sourcePropertyId },
                     include: {
                         media: true,
-                        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true, avatarKey: true } },
+                        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true, avatarKey: true, latitude: true, longitude: true } },
                         exclusiveProperty: { select: { id: true, status: true, fixedRewardGems: true } },
                     },
                 });
