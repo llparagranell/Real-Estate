@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { Check, Clock, X, ArrowUpDown, BadgeCheck } from "lucide-react"
-
+import { Check, Clock, X, ArrowUpDown } from "lucide-react"
+import Link from "next/link"
 import {
     Dialog,
     DialogContent,
@@ -23,8 +23,6 @@ export type BanRequestRow = {
     email: string
     gems: number
     kycStatus: string
-    isBlueTick: boolean
-    isVerifiedSeller: boolean
     propertyListings: {
         total: number
         sold: number
@@ -47,7 +45,7 @@ function getErrorMessage(err: unknown): string {
 export function createBanRequestColumns(onRefetch: () => void): ColumnDef<BanRequestRow>[] {
     return [
         {
-            accessorKey: "username",
+            accessorKey: "userName",
             header: ({ column }) => (
                 <Button
                     variant="ghost"
@@ -58,13 +56,15 @@ export function createBanRequestColumns(onRefetch: () => void): ColumnDef<BanReq
                 </Button>
             ),
             cell: ({ row }) => {
-                const { username, isBlueTick, isVerifiedSeller } = row.original
+                const r = row.original
                 return (
-                    <div className="flex items-center gap-2 pl-2">
-                        {/* <span className={`size-2 rounded-full shrink-0 ${isVerifiedSeller ? "bg-green-500" : "bg-red-500"}`} /> */}
-                        <span className="font-medium">{username}</span>
-                        {isBlueTick && <BadgeCheck className="size-5 fill-blue-500 text-white " />}
-                    </div>
+                    <Link
+                        target="_blank"
+                        href={`/user/${r.userId}`}
+                        className="font-medium pl-4 bg-zinc-200 rounded-full hover:bg-zinc-300 hover:text-black text-black p-2 text-center px-4"
+                    >
+                        {r.username}
+                    </Link>
                 )
             },
         },
