@@ -1,9 +1,8 @@
 "use client";
 
-import { Building2, Gem, Handshake, IndianRupee, PenLine } from "lucide-react";
+import { Building2, Gem, Handshake, IndianRupee, Mail, PenLine, Phone, Gift, OctagonMinus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
-import { OctagonMinus, BadgeCheck } from "lucide-react";
 import { BlueTick } from "./blueTick";
 import { VerifiedSeller } from "./verifiedSeller";
 import { UserSellingHistory } from "./userSellingHistory";
@@ -54,12 +53,38 @@ export function UserActionsAndDetails({ user }: { user: FullUserData }) {
                     }
                 />
                 <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-zinc-100   shadow-none"
-                onClick={() => router.push(`/user/edit/${user.id}`)}
+                    onClick={() => router.push(`/user/edit/${user.id}`)}
                 >
                     <PenLine className="size-5 text-blue-500" />
                     <p>Edit User</p>
                 </Button>
 
+            </div>
+            <div className="space-y-1.5">
+                <h2 className="font-medium text-sm px-0.5">Contact Info</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
+                    <div className="border p-2 rounded-md bg-white flex items-center gap-2">
+                        <Phone className="size-4 text-blue-500 shrink-0" />
+                        <div className="min-w-0">
+                            <p className="text-[11px] font-medium text-muted-foreground">Contact</p>
+                            <p className="text-xs font-semibold break-all">{user.phone || "—"}</p>
+                        </div>
+                    </div>
+                    <div className="border p-2 rounded-md bg-white flex items-center gap-2">
+                        <Mail className="size-4 text-blue-500 shrink-0" />
+                        <div className="min-w-0">
+                            <p className="text-[11px] font-medium text-muted-foreground">Email</p>
+                            <p className="text-xs font-semibold break-all">{user.email || "—"}</p>
+                        </div>
+                    </div>
+                    <div className="border p-2 rounded-md bg-white flex items-center gap-2">
+                        <Gift className="size-4 text-green-500 shrink-0" />
+                        <div className="min-w-0">
+                            <p className="text-[11px] font-medium text-muted-foreground">Referral Code</p>
+                            <p className="text-xs font-semibold break-all">{user.referralCode || "—"}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div>
                 <h1 className="font-medium py-4 px-2 text-xl">User Details</h1>
