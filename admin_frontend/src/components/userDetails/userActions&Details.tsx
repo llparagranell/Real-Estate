@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, Gem, Handshake, IndianRupee, Mail, PenLine, Phone, Gift, OctagonMinus, Unlock, Loader2 } from "lucide-react";
+import { Building2, Gem, Handshake, IndianRupee, Mail, PenLine, Phone, Gift, OctagonMinus, Unlock, Loader2, IdCardIcon, Eye, Download } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import {
@@ -76,6 +76,21 @@ export function UserActionsAndDetails({ user, onUserUpdated }: { user: FullUserD
             setIsUnblocking(false);
         }
     };
+    const downloadImage = async (url: string, filename: string) => {
+        try {
+            const encoded = encodeURIComponent(url);
+            const res = await api.get<Blob>(`/staff/users/kyc-proxy-download?url=${encoded}&filename=${encodeURIComponent(filename)}`, { responseType: "blob" });
+            const blob = new Blob([res.data], { type: res.headers["content-type"] ?? "application/octet-stream" });
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = blobUrl;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error("Download KYC image error:", err);
+        }
+    };
 
     return (
         <div className="flex flex-col gap-4 mt-4">
@@ -129,6 +144,7 @@ export function UserActionsAndDetails({ user, onUserUpdated }: { user: FullUserD
                 </Button>
 
             </div>
+            {/* Contact Info */}
             <div className="space-y-1.5">
                 <h2 className="font-medium text-sm px-0.5">Contact Info</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
@@ -153,6 +169,69 @@ export function UserActionsAndDetails({ user, onUserUpdated }: { user: FullUserD
                             <p className="text-xs font-semibold break-all">{user.referralCode || "—"}</p>
                         </div>
                     </div>
+                </div>
+            </div>
+            {/* kyc details */}
+            <div className="space-y-1.5">
+                <h2 className="font-medium text-sm px-0.5">KYC Details</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                    {(() => {
+                        const aadharKyc = user.kyc?.find((k) => k.type === "AADHARCARD")
+                        const panKyc = user.kyc?.find((k) => k.type === "PANCARD")
+                        return (
+                            <>
+                                <div className="border p-2 rounded-md bg-white flex items-center gap-2">
+                                    <IdCardIcon className="size-4 text-green-500 shrink-0" />
+                                    <span className="text-sm font-bold flex-1">Aadhaar Card</span>
+                                    {aadharKyc?.imageUrl && (
+                                        <>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8 shrink-0 shadow-none"
+                                                onClick={() => window.open(aadharKyc.imageUrl!, "_blank")}
+                                            >
+                                                <Eye className="size-4" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8 shrink-0 shadow-none"
+                                                onClick={() => downloadImage(aadharKyc.imageUrl!, "aadhaar-card")}
+                                            >
+                                                <Download className="size-4" />
+                                            </Button>
+                                        </>
+
+                                    )}
+                                </div>
+                                <div className="border p-2 rounded-md bg-white flex items-center gap-2">
+                                    <IdCardIcon className="size-4 text-green-500 shrink-0" />
+                                    <span className="text-sm font-bold flex-1">PAN Card</span>
+                                    {panKyc?.imageUrl && (
+                                        <>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8 shrink-0 shadow-none"
+                                                onClick={() => window.open(panKyc.imageUrl!, "_blank")}
+                                            >
+                                                <Eye className="size-4" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8 shrink-0 shadow-none"
+                                                onClick={() => downloadImage(panKyc.imageUrl!, "pan-card")}
+                                            >
+                                                <Download className="size-4" />
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
+                            </>
+                        )
+                    })()}
                 </div>
             </div>
             <div>

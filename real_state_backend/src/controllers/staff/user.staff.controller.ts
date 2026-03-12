@@ -86,6 +86,52 @@ export async function getAllBlockedUsers(req: Request, res: Response) {
     }
 }
 
+function getAllowedS3BaseUrls(): string[] {
+    const bucket = process.env.AWS_S3_BUCKET;
+    const region = process.env.AWS_REGION;
+    const custom = process.env.S3_PUBLIC_BASE_URL?.replace(/\/+$/, "");
+    const bases: string[] = [];
+    if (custom) bases.push(custom);
+    if (bucket && region) {
+        bases.push(`https://${bucket}.s3.${region}.amazonaws.com`);
+        bases.push(`https://${bucket}.s3.amazonaws.com`);
+    }
+    return bases;
+}
+
+export async function kycProxyDownload(req: Request, res: Response) {
+    try {
+        const url = typeof req.query.url === "string" ? req.query.url : "";
+        const filename = typeof req.query.filename === "string" ? req.query.filename : "kyc-document";
+
+        if (!url) {
+            return res.status(400).json({ message: "Missing url query parameter" });
+        }
+
+        const allowedBases = getAllowedS3BaseUrls();
+        const urlLower = url.toLowerCase();
+        const isAllowed = allowedBases.some((base) => urlLower.startsWith(base.toLowerCase()));
+        if (!isAllowed) {
+            return res.status(403).json({ message: "URL not from allowed S3 storage" });
+        }
+
+        const resp = await fetch(url);
+        if (!resp.ok) {
+            return res.status(resp.status).json({ message: "Failed to fetch image from storage" });
+        }
+
+        const contentType = resp.headers.get("content-type") ?? "application/octet-stream";
+        const buffer = Buffer.from(await resp.arrayBuffer());
+
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+        return res.send(buffer);
+    } catch (error) {
+        console.error("KYC proxy download error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
 export async function deleteUser(req: Request, res: Response) {
     try {
         const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -429,6 +475,7 @@ export async function fullUserDetails(req: Request, res: Response) {
                     select: {
                         type: true,
                         status: true,
+                        imageUrl: true,
                     }
                 },
                 properties: {

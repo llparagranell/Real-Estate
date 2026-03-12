@@ -34,6 +34,7 @@ export type UserStats = {
 export type KycItem = {
     type: "AADHARCARD" | "PANCARD"
     status: "PENDING" | "VERIFIED" | "REJECTED"
+    imageUrl?: string | null
 }
 
 export type FullUserData = {
