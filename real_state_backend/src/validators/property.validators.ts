@@ -71,6 +71,16 @@ export const propertyFacingEnum = [
 
 export const MediaTypeEnum = ["IMAGE", "VIDEO"] as const;
 
+const nullablePositiveNumber = z.preprocess(
+    (value) => value === null || value === "" ? undefined : value,
+    z.number().positive().optional().nullable()
+);
+
+const nullableUnitEnum = z.preprocess(
+    (value) => value === null || value === "" ? undefined : value,
+    z.enum(carpetAreaUnitEnum).optional().nullable()
+);
+
 export const propertyMediaSchema = z.object({
     url: z.string().url(),
     key: z.string(),
@@ -100,10 +110,10 @@ export const addPropertySchema = z.object({
     latitude: z.number(),
     
     // Size - Updated
-    carpetArea: z.number().positive().optional(),
-    carpetAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
-    plotLandArea: z.number().positive().optional(),
-    plotLandAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
+    carpetArea: nullablePositiveNumber,
+    carpetAreaUnit: nullableUnitEnum,
+    plotLandArea: nullablePositiveNumber,
+    plotLandAreaUnit: nullableUnitEnum,
     
     // Basic Details - New
     category: z.enum(categoryEnum).optional(),
@@ -156,8 +166,10 @@ export const addDraftPropertySchema = z.object({
     latitude: z.number().optional(),
     
     // Size
-    carpetArea: z.number().positive().optional(),
-    carpetAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
+    carpetArea: nullablePositiveNumber,
+    carpetAreaUnit: nullableUnitEnum,
+    plotLandArea: nullablePositiveNumber,
+    plotLandAreaUnit: nullableUnitEnum,
     
     // Basic Details
     category: z.enum(categoryEnum).optional(),
@@ -210,10 +222,10 @@ export const createExclusivePropertySchema = z.object({
     address: z.string().optional(),
     longitude: z.number().optional(),
     latitude: z.number().optional(),
-    carpetArea: z.number().positive().optional(),
-    carpetAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
-    plotLandArea: z.number().positive().optional(),
-    plotLandAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
+    carpetArea: nullablePositiveNumber,
+    carpetAreaUnit: nullableUnitEnum,
+    plotLandArea: nullablePositiveNumber,
+    plotLandAreaUnit: nullableUnitEnum,
     size: z.number().optional(),
     sizeUnit: z.enum(sizeUnitEnum).optional(),
     category: z.enum(categoryEnum).optional(),
@@ -256,10 +268,10 @@ export const updateExclusivePropertySchema = z.object({
     address: z.string().optional().nullable(),
     longitude: z.number().optional().nullable(),
     latitude: z.number().optional().nullable(),
-    carpetArea: z.number().positive().optional().nullable(),
-    carpetAreaUnit: z.enum(carpetAreaUnitEnum).optional().nullable(),
-    plotLandArea: z.number().positive().optional().nullable(),
-    plotLandAreaUnit: z.enum(carpetAreaUnitEnum).optional().nullable(),
+    carpetArea: nullablePositiveNumber,
+    carpetAreaUnit: nullableUnitEnum,
+    plotLandArea: nullablePositiveNumber,
+    plotLandAreaUnit: nullableUnitEnum,
     size: z.number().optional().nullable(),
     sizeUnit: z.enum(sizeUnitEnum).optional().nullable(),
     category: z.enum(categoryEnum).optional().nullable(),
@@ -304,10 +316,10 @@ export const updatePropertySchema = z.object({
     latitude: z.number().optional(),
     
     // Size
-    carpetArea: z.number().positive().optional(),
-    carpetAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
-    plotLandArea: z.number().positive().optional(),
-    plotLandAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
+    carpetArea: nullablePositiveNumber,
+    carpetAreaUnit: nullableUnitEnum,
+    plotLandArea: nullablePositiveNumber,
+    plotLandAreaUnit: nullableUnitEnum,
     
     // Basic Details
     category: z.enum(categoryEnum).optional(),
