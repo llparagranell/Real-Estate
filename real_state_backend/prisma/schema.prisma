@@ -305,7 +305,6 @@ model PropertyMedia {
 enum ExclusivePropertyStatus {
   ACTIVE
   SOLD_OUT
-  ARCHIVED
 }
 
 model ExclusiveProperty {
