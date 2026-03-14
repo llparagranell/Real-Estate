@@ -55,3 +55,30 @@ export async function getSupportTickets(req: Request, res: Response) {
         return res.status(500).json({ message: "Internal server error" });
     }
 }
+
+export async function closeSupportTicket(req: Request, res: Response) {
+    try {
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        if (!id) {
+            return res.status(400).json({ message: "Invalid ticket ID" });
+        }
+        const ticket = await prisma.customerSupport.findUnique({
+            where: { id },
+        });
+        if (!ticket) {
+            return res.status(404).json({ message: "Ticket not found" });
+        }
+        await prisma.customerSupport.update({
+            where: { id },
+            data: { ticketStatus: "CLOSED" },
+        });
+        return res.status(200).json({
+            success: true,
+            message: "Ticket closed successfully",
+            data: ticket,
+        });
+    } catch (error) {
+        console.error("Close support ticket error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
