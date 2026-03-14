@@ -636,6 +636,7 @@ enum AppointmentStatus {
   SCHEDULED
   COMPLETED
   CANCELLED
+  WAITING 
 }
 
 model Appointment {
