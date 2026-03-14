@@ -82,9 +82,16 @@ export const getNotificationsQuerySchema = z.object({
         .optional()
 });
 
+export const sendTestNotificationSchema = z.object({
+    userId: z.string().min(1, "userId is required"),
+    title: z.string().min(1).max(120).optional(),
+    description: z.string().min(1).max(500).optional(),
+});
+
 export type SignupInput = z.infer<typeof signupSchema>;
 export type SigninInput = z.infer<typeof signinSchema>;
 export type UpdateProfieInput = z.infer<typeof updateProfileSchema>
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
 export type RegisterDeviceTokenInput = z.infer<typeof registerDeviceTokenSchema>;
 export type UnregisterDeviceTokenInput = z.infer<typeof unregisterDeviceTokenSchema>;
+export type SendTestNotificationInput = z.infer<typeof sendTestNotificationSchema>;

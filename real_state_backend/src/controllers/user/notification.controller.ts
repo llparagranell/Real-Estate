@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
 import { DevicePlatform } from "@prisma/client";
+import { NotificationType } from "@prisma/client";
+import { createAndSendUserNotification } from "../../services/notification.service";
 
 export async function registerDeviceToken(req: Request, res: Response) {
   try {
@@ -201,6 +203,50 @@ export async function markAllNotificationsAsRead(req: Request, res: Response) {
     });
   } catch (error) {
     console.error("Mark all notifications read error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function sendTestNotification(req: Request, res: Response) {
+  try {
+    const { userId, title, description } = req.body as {
+      userId?: string;
+      title?: string;
+      description?: string;
+    };
+
+    const targetUserId = userId || req.user?.id;
+    if (!targetUserId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ message: "Target user not found" });
+    }
+
+    const result = await createAndSendUserNotification({
+      userId: targetUserId,
+      type: NotificationType.GENERIC,
+      title: title || "Test notification",
+      description: description || "This is a test push notification from Realbro backend.",
+      data: {
+        source: "manual_test",
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Test notification triggered",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Send test notification error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }

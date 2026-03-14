@@ -101,6 +101,22 @@ Endpoint:
 Endpoint:
 - `PATCH /user/notifications/read-all`
 
+### F. Test Push Notification (Secret Header, No Login)
+Endpoint:
+- `POST /user/notifications/test`
+
+Headers:
+- `x-notification-test-secret: <NOTIFICATION_TEST_SECRET>`
+
+Body:
+```json
+{
+  "userId": "target-user-id",
+  "title": "Push Test",
+  "description": "Testing from backend"
+}
+```
+
 ---
 
 ## 2) Notification Types Available
@@ -223,6 +239,9 @@ Alternate (manual fields):
 FIREBASE_PROJECT_ID=your-firebase-project-id
 FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxx@your-project.iam.gserviceaccount.com
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n"
+
+# Required for secret-protected public notification test endpoint
+NOTIFICATION_TEST_SECRET=change-this-to-a-long-random-secret
 ```
 
 How to get values:
