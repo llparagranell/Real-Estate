@@ -107,7 +107,7 @@ export function UserActionsAndDetails({ user, onUserUpdated }: { user: FullUserD
                     {user.isVerifiedSeller && <VerifiedSeller />}
                 </div>
             </div>
-            <div className="flex gap-2 items-center flex-wrap">
+            <div className="grid grid-cols-4 gap-2 items-center flex-wrap ">
                 {user.isBlocked ? (
                     <Button
                         variant="outline"
@@ -141,6 +141,12 @@ export function UserActionsAndDetails({ user, onUserUpdated }: { user: FullUserD
                 >
                     <PenLine className="size-5 text-blue-500" />
                     <p>Edit User</p>
+                </Button>
+                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-zinc-100   shadow-none"
+                    onClick={() => router.push(`/user/${user.id}/txn-history`)}
+                >
+                    <PenLine className="size-5 text-blue-500" />
+                    <p>Txn History</p>
                 </Button>
 
             </div>

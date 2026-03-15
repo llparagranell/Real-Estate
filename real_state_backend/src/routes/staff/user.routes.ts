@@ -1,5 +1,6 @@
 import express from "express";
 import { getAllUsers, getAllBlockedUsers, getAllBanRequests, reviewBanRequest, fullUserDetails, getUserForEdit, updateUserByStaff, updateKycStatus, deleteUser, blockUser, unblockUser, kycProxyDownload } from "../../controllers/staff/user.staff.controller";
+import { getTransactionHistory } from "../../controllers/staff/transactionHistory";
 import { authMiddleware } from "../../middleware/auth";
 import { requireAdminOrSuperAdmin, requireSuperAdmin } from "../../middleware/staff";
 const router = express.Router();
@@ -9,6 +10,10 @@ router.get("/blocked", authMiddleware, requireAdminOrSuperAdmin, getAllBlockedUs
 router.get("/ban-requests", authMiddleware, requireAdminOrSuperAdmin, getAllBanRequests);
 router.put("/ban-requests/:requestId", authMiddleware, requireSuperAdmin, reviewBanRequest);
 router.get("/kyc-proxy-download", authMiddleware, requireAdminOrSuperAdmin, kycProxyDownload);
+router.get("/:id/transaction-history", authMiddleware, requireAdminOrSuperAdmin, (req, res, next) => {
+    req.query.userId = req.params.id;
+    next();
+}, getTransactionHistory);
 router.get("/:id", authMiddleware, requireAdminOrSuperAdmin, fullUserDetails);
 router.get("/:id/edit", authMiddleware, requireAdminOrSuperAdmin, getUserForEdit);
 router.put("/:id", authMiddleware, requireAdminOrSuperAdmin, updateUserByStaff);
