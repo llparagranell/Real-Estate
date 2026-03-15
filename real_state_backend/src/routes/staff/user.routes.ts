@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get("/", authMiddleware, requireAdminOrSuperAdmin, getAllUsers);
 router.get("/blocked", authMiddleware, requireAdminOrSuperAdmin, getAllBlockedUsers);
-router.get("/ban-requests", authMiddleware, requireSuperAdmin, getAllBanRequests);
+router.get("/ban-requests", authMiddleware, requireAdminOrSuperAdmin, getAllBanRequests);
 router.put("/ban-requests/:requestId", authMiddleware, requireSuperAdmin, reviewBanRequest);
 router.get("/kyc-proxy-download", authMiddleware, requireAdminOrSuperAdmin, kycProxyDownload);
 router.get("/:id", authMiddleware, requireAdminOrSuperAdmin, fullUserDetails);
