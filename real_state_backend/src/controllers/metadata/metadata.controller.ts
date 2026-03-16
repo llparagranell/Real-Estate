@@ -1,37 +1,11 @@
 import { Request, Response } from "express";
+import { propertyCategoryTypeLabels } from "../../utils/propertyTaxonomy";
 
 export async function getPropertyCategories(req: Request, res: Response) {
     try {
-        const categories = [
-            {
-                category: "RESIDENTIAL",
-                types: [
-                    "Apartment / Flat",
-                    "Independent House / Villa",
-                    "Plot / Land",
-                    "Farmhouse"
-                ]
-            },
-            {
-                category: "COMMERCIAL",
-                types: [
-                    "Office Space",
-                    "Shop / Showroom",
-                    "Commercial Plot / Land",
-                    "Warehouse / Godown"
-                ]
-            },
-            {
-                category: "AGRICULTURAL",
-                types: [
-                    "Agricultural / Farm Land"
-                ]
-            }
-        ];
-
         return res.status(200).json({
             success: true,
-            data: categories
+            data: propertyCategoryTypeLabels
         });
     } catch (error: any) {
         console.error("Get property categories error:", error);

@@ -4,6 +4,7 @@ import z from "zod";
 import { NotificationType } from "@prisma/client";
 import { createExclusivePropertySchema, updateExclusivePropertySchema } from "../../validators/property.validators";
 import { broadcastNotificationToAllUsers } from "../../services/notification.service";
+import { normalizeCategory, normalizePropertyType } from "../../utils/propertyTaxonomy";
 
 async function resolveStaffActorId(staffId: string, role: string): Promise<string | null> {
     if (role !== "SUPER_ADMIN") {
@@ -660,17 +661,17 @@ export async function getPendingExclusiveProperties(req: Request, res: Response)
 
 function buildPropertyWhereFromQuery(query: Record<string, unknown>) {
     const where: Record<string, unknown> = {};
-    const category = String(query.category ?? "").trim();
-    const propertyType = String(query.propertyType ?? "").trim();
+    const category = normalizeCategory(query.category);
+    const propertyType = normalizePropertyType(query.propertyType);
     const furnishingStatus = String(query.furnishingStatus ?? "").trim();
     const priceMin = Number(query.priceMin);
     const priceMax = Number(query.priceMax);
     const location = String(query.location ?? "").trim();
 
-    if (category && ["RESIDENTIAL", "COMMERCIAL", "AGRICULTURAL"].includes(category)) {
+    if (category) {
         where.category = category;
     }
-    if (propertyType && ["FLAT", "DUPLEX", "PLOT", "FARMLAND"].includes(propertyType)) {
+    if (propertyType) {
         where.propertyType = propertyType;
     }
     if (

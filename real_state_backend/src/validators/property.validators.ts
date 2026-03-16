@@ -1,4 +1,12 @@
 import z from "zod";
+import {
+    categoryEnum as categoryEnumValues,
+    normalizeCategory,
+    normalizeCategoryArray,
+    normalizePropertyType,
+    normalizePropertyTypeArray,
+    propertyTypeEnum as propertyTypeEnumValues,
+} from "../utils/propertyTaxonomy";
 
 export const StatusEnum = [
     "ACTIVE",
@@ -9,12 +17,7 @@ export const StatusEnum = [
     "DRAFT",
 ] as const;
 
-export const propertyTypeEnum = [
-    "FARMLAND",
-    "DUPLEX",
-    "FLAT",
-    "PLOT",
-] as const;
+export const propertyTypeEnum = propertyTypeEnumValues;
 
 export const sizeUnitEnum = [
     "ACRES",
@@ -23,11 +26,7 @@ export const sizeUnitEnum = [
     "SQMT"
 ] as const;
 
-export const categoryEnum = [
-    "RESIDENTIAL",
-    "COMMERCIAL",
-    "AGRICULTURAL"
-] as const;
+export const categoryEnum = categoryEnumValues;
 
 export const furnishingStatusEnum = [
     "FullyFurnished",
@@ -70,6 +69,16 @@ export const propertyFacingEnum = [
 ] as const;
 
 export const MediaTypeEnum = ["IMAGE", "VIDEO"] as const;
+
+const normalizedPropertyTypeEnum = z.preprocess(
+    (value) => normalizePropertyType(value) ?? value,
+    z.enum(propertyTypeEnum)
+);
+
+const normalizedCategoryEnum = z.preprocess(
+    (value) => normalizeCategory(value) ?? value,
+    z.enum(categoryEnum)
+);
 
 const nullablePositiveNumber = z.preprocess(
     (value) => value === null || value === "" ? undefined : value,
@@ -170,7 +179,7 @@ export const addPropertySchema = z.object({
     title: z.string().min(1, "Title is required"),
     description: z.string().optional(),
     status: z.enum(StatusEnum).default("ACTIVE"),
-    propertyType: z.enum(propertyTypeEnum),
+    propertyType: normalizedPropertyTypeEnum,
     
     // Price - Updated to single listingPrice
     listingPrice: z.number().positive("Listing price must be positive"),
@@ -193,7 +202,7 @@ export const addPropertySchema = z.object({
     plotLandAreaUnit: nullableUnitEnum,
     
     // Basic Details - New
-    category: z.enum(categoryEnum).optional(),
+    category: normalizedCategoryEnum.optional(),
     furnishingStatus: z.enum(furnishingStatusEnum).optional(),
     availabilityStatus: lenientAvailabilityStatus,
     ageOfProperty: lenientAgeOfProperty,
@@ -226,7 +235,7 @@ export const addDraftPropertySchema = z.object({
     // Basic Info - Only title is required
     title: z.string().min(1, "Title is required"),
     description: z.string().optional(),
-    propertyType: z.enum(propertyTypeEnum).optional(),
+    propertyType: normalizedPropertyTypeEnum.optional(),
     
     // Price
     listingPrice: z.number().positive("Listing price must be positive").optional(),
@@ -249,7 +258,7 @@ export const addDraftPropertySchema = z.object({
     plotLandAreaUnit: nullableUnitEnum,
     
     // Basic Details
-    category: z.enum(categoryEnum).optional(),
+    category: normalizedCategoryEnum.optional(),
     furnishingStatus: z.enum(furnishingStatusEnum).optional(),
     availabilityStatus: lenientAvailabilityStatus,
     ageOfProperty: lenientAgeOfProperty,
@@ -286,7 +295,7 @@ export const createExclusivePropertySchema = z.object({
     // All property fields optional - override copied values from source property
     title: z.string().min(1).optional(),
     description: z.string().optional(),
-    propertyType: z.enum(propertyTypeEnum).optional(),
+    propertyType: normalizedPropertyTypeEnum.optional(),
     listingPrice: z.number().positive().optional(),
     priceMin: z.number().optional(),
     priceMax: z.number().optional(),
@@ -305,7 +314,7 @@ export const createExclusivePropertySchema = z.object({
     plotLandAreaUnit: nullableUnitEnum,
     size: z.number().optional(),
     sizeUnit: z.enum(sizeUnitEnum).optional(),
-    category: z.enum(categoryEnum).optional(),
+    category: normalizedCategoryEnum.optional(),
     furnishingStatus: z.enum(furnishingStatusEnum).optional(),
     availabilityStatus: lenientAvailabilityStatus,
     ageOfProperty: lenientAgeOfProperty,
@@ -332,7 +341,7 @@ export const updateExclusivePropertySchema = z.object({
     status: z.enum(exclusivePropertyStatusEnum).optional(),
     title: z.string().min(1).optional(),
     description: z.string().optional().nullable(),
-    propertyType: z.enum(propertyTypeEnum).optional().nullable(),
+    propertyType: normalizedPropertyTypeEnum.optional().nullable(),
     listingPrice: z.number().positive().optional().nullable(),
     priceMin: z.number().optional().nullable(),
     priceMax: z.number().optional().nullable(),
@@ -351,7 +360,7 @@ export const updateExclusivePropertySchema = z.object({
     plotLandAreaUnit: nullableUnitEnum,
     size: z.number().optional().nullable(),
     sizeUnit: z.enum(sizeUnitEnum).optional().nullable(),
-    category: z.enum(categoryEnum).optional().nullable(),
+    category: normalizedCategoryEnum.optional().nullable(),
     furnishingStatus: z.enum(furnishingStatusEnum).optional().nullable(),
     availabilityStatus: lenientAvailabilityStatus,
     ageOfProperty: lenientAgeOfProperty,
@@ -376,7 +385,7 @@ export const updatePropertySchema = z.object({
     title: z.string().min(1).optional(),
     description: z.string().optional(),
     status: z.enum(StatusEnum).optional(),
-    propertyType: z.enum(propertyTypeEnum).optional(),
+    propertyType: normalizedPropertyTypeEnum.optional(),
     
     // Price
     listingPrice: z.number().positive().optional(),
@@ -399,7 +408,7 @@ export const updatePropertySchema = z.object({
     plotLandAreaUnit: nullableUnitEnumForUpdate,
     
     // Basic Details
-    category: z.enum(categoryEnum).optional(),
+    category: normalizedCategoryEnum.optional(),
     furnishingStatus: z.enum(furnishingStatusEnum).optional(),
     availabilityStatus: lenientAvailabilityStatusForUpdate,
     ageOfProperty: lenientAgeOfPropertyForUpdate,
@@ -442,13 +451,13 @@ export const changeStatus = z.object({
 export const filterPropertiesSchema = z.object({
     // Property Category (can select multiple)
     category: z.preprocess(
-        (val) => val ? (Array.isArray(val) ? val : [val]) : undefined,
+        (val) => normalizeCategoryArray(val),
         z.array(z.enum(categoryEnum)).optional()
     ),
     
     // Property Type (can select multiple)
     propertyType: z.preprocess(
-        (val) => val ? (Array.isArray(val) ? val : [val]) : undefined,
+        (val) => normalizePropertyTypeArray(val),
         z.array(z.enum(propertyTypeEnum)).optional()
     ),
     
@@ -557,11 +566,11 @@ export const filterExclusivePropertiesSchema = z.object({
     ),
 
     category: z.preprocess(
-        (val) => val ? (Array.isArray(val) ? val : [val]) : undefined,
+        (val) => normalizeCategoryArray(val),
         z.array(z.enum(categoryEnum)).optional()
     ),
     propertyType: z.preprocess(
-        (val) => val ? (Array.isArray(val) ? val : [val]) : undefined,
+        (val) => normalizePropertyTypeArray(val),
         z.array(z.enum(propertyTypeEnum)).optional()
     ),
     furnishingStatus: z.preprocess(

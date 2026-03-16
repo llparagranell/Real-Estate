@@ -1,9 +1,11 @@
 # Phone Number Update via Email OTP API
 
 ## Overview
+
 This flow lets an authenticated user change their mobile number only after email OTP verification.
 
 ### Flow
+
 1. User enters new phone number in app.
 2. App calls send OTP API.
 3. Backend sends OTP to the user's registered email.
@@ -14,9 +16,11 @@ This flow lets an authenticated user change their mobile number only after email
 ---
 
 ## Authentication
+
 All endpoints require a valid user access token.
 
 Header:
+
 ```http
 Authorization: Bearer <access_token>
 Content-Type: application/json
@@ -29,6 +33,7 @@ Content-Type: application/json
 **POST** `/api/v1/user/profile/phone-change/send-otp`
 
 ### Request Body
+
 ```json
 {
   "newPhone": "+919876543210"
@@ -36,10 +41,12 @@ Content-Type: application/json
 ```
 
 ### Validation Rules
+
 - `newPhone` must be in international format: `+1234567890`
 - Regex: `^\+[1-9]\d{6,14}$`
 
 ### Success Response (200)
+
 ```json
 {
   "message": "OTP sent to your registered email"
@@ -49,6 +56,7 @@ Content-Type: application/json
 ### Error Responses
 
 #### 400 Bad Request (same current phone)
+
 ```json
 {
   "message": "New phone is same as current phone"
@@ -56,6 +64,7 @@ Content-Type: application/json
 ```
 
 #### 401 Unauthorized
+
 ```json
 {
   "message": "Unauthorized"
@@ -63,6 +72,7 @@ Content-Type: application/json
 ```
 
 #### 404 Not Found
+
 ```json
 {
   "message": "User does not exist"
@@ -70,6 +80,7 @@ Content-Type: application/json
 ```
 
 #### 409 Conflict (already used by another user)
+
 ```json
 {
   "message": "Phone number already in use"
@@ -77,6 +88,7 @@ Content-Type: application/json
 ```
 
 #### 500 Internal Server Error
+
 ```json
 {
   "message": "Internal server error"
@@ -90,6 +102,7 @@ Content-Type: application/json
 **POST** `/api/v1/user/profile/phone-change/verify`
 
 ### Request Body
+
 ```json
 {
   "newPhone": "+919876543210",
@@ -98,10 +111,12 @@ Content-Type: application/json
 ```
 
 ### Validation Rules
+
 - `newPhone` must match: `^\+[1-9]\d{6,14}$`
 - `code` must be exactly 6 digits
 
 ### Success Response (200)
+
 ```json
 {
   "success": true,
@@ -122,6 +137,7 @@ Content-Type: application/json
 ### Error Responses
 
 #### 400 Bad Request (same current phone)
+
 ```json
 {
   "message": "New phone is same as current phone"
@@ -129,6 +145,7 @@ Content-Type: application/json
 ```
 
 #### 400 Bad Request (invalid or expired OTP)
+
 ```json
 {
   "message": "Invalid or expired OTP"
@@ -136,6 +153,7 @@ Content-Type: application/json
 ```
 
 #### 401 Unauthorized
+
 ```json
 {
   "message": "Unauthorized"
@@ -143,6 +161,7 @@ Content-Type: application/json
 ```
 
 #### 404 Not Found
+
 ```json
 {
   "message": "User does not exist"
@@ -150,6 +169,7 @@ Content-Type: application/json
 ```
 
 #### 409 Conflict (already used by another user)
+
 ```json
 {
   "message": "Phone number already in use"
@@ -157,6 +177,7 @@ Content-Type: application/json
 ```
 
 #### 500 Internal Server Error
+
 ```json
 {
   "message": "Internal server error"
@@ -166,6 +187,7 @@ Content-Type: application/json
 ---
 
 ## Important Integration Notes
+
 - Normal profile update API does not allow direct phone updates.
 - App must always use this OTP flow for phone changes.
 - Uniqueness is checked in both send and verify APIs.
@@ -177,6 +199,7 @@ Content-Type: application/json
 ## cURL Examples
 
 ### 1) Send OTP
+
 ```bash
 curl -X POST "http://localhost:5000/api/v1/user/profile/phone-change/send-otp" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
@@ -187,8 +210,9 @@ curl -X POST "http://localhost:5000/api/v1/user/profile/phone-change/send-otp" \
 ```
 
 ### 2) Verify OTP and Update Phone
+
 ```bash
-curl -X POST "http://localhost:5000/api/v1/user/profile/phone-change/verify" \
+mecurl -X POST "http://localhost:5000/api/v1/user/profile/phone-change/verify" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
