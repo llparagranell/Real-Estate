@@ -59,6 +59,9 @@ export function PropertyActionBar({
     const propertyId = Array.isArray(params?.id) ? params.id[0] : params?.id
 
     const isSuperAdmin = user?.role === "SUPER_ADMIN"
+    const buyConfirmationText = isSuperAdmin
+        ? "Are you sure you want to buy this property as RealBro?"
+        : "Are you sure you want to request acquisition of this property?"
 
     const buyEnabled = !isBoughtByRealbro && !isExclusive
     const makeExclusiveEnabled = isBoughtByRealbro && isSuperAdmin
@@ -82,8 +85,11 @@ export function PropertyActionBar({
     const [soldConfirmOpen, setSoldConfirmOpen] = useState(false)
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [buyDialogOpen, setBuyDialogOpen] = useState(false)
+    const [isSubmittingBuy, setIsSubmittingBuy] = useState(false)
+
     const isMarkingSold = soldToggleLabel === "Mark as Sold"
-    const handleSoldConfirm = async () => {
+    const handleSoldConfirm = async () => {  
         await onMarkSold?.()
         setSoldConfirmOpen(false)
     }
@@ -95,6 +101,16 @@ export function PropertyActionBar({
             setDeleteConfirmOpen(false)
         } finally {
             setIsDeleting(false)
+        }
+    }
+    const handleConfirmBuy = async () => {
+        if (!onBuy) return
+        try {
+            setIsSubmittingBuy(true)
+            await onBuy()
+            setBuyDialogOpen(false)
+        } finally {
+            setIsSubmittingBuy(false)
         }
     }
 
@@ -136,12 +152,34 @@ export function PropertyActionBar({
                 <Button
                     size="sm"
                     className={`gap-1.5 text-xs ${buyEnabled ? "bg-blue-600 hover:bg-blue-700" : `bg-gray-400 ${disabledBtnClass}`}`}
-                    onClick={onBuy}
+                    onClick={() => setBuyDialogOpen(true)}
                     disabled={!buyEnabled || !onBuy}
                 >
                     <ShoppingCart className="size-3.5" />
                     Buy Property
                 </Button>
+                <Dialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen}>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Confirm Action</DialogTitle>
+                                        <DialogDescription>
+                                            {buyConfirmationText}
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <DialogFooter>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setBuyDialogOpen(false)}
+                                            disabled={isSubmittingBuy}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button onClick={handleConfirmBuy} disabled={isSubmittingBuy || !onBuy}>
+                                            {isSubmittingBuy ? "Processing..." : "Confirm"}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
 
                 <Button
                     size="sm"
