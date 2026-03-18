@@ -12,6 +12,48 @@ type Params = {
     appointmentId: string;
 };
 
+async function resolvePropertyId(propertyId: string) {
+    const property = await prisma.property.findUnique({
+        where: { id: propertyId },
+        select: { id: true, title: true },
+    });
+
+    if (property) {
+        return {
+            resolvedPropertyId: property.id,
+            propertyTitle: property.title,
+        };
+    }
+
+    const propertyFromExclusive = await prisma.property.findFirst({
+        where: {
+            exclusiveProperty: {
+                is: {
+                    id: propertyId,
+                },
+            },
+        },
+        select: {
+            id: true,
+            title: true,
+            exclusiveProperty: {
+                select: {
+                    title: true,
+                },
+            },
+        },
+    });
+
+    if (!propertyFromExclusive) {
+        return null;
+    }
+
+    return {
+        resolvedPropertyId: propertyFromExclusive.id,
+        propertyTitle: propertyFromExclusive.exclusiveProperty?.title || propertyFromExclusive.title,
+    };
+}
+
 // Create a new appointment
 export async function createAppointment(req: Request, res: Response) {
     try {
@@ -21,13 +63,9 @@ export async function createAppointment(req: Request, res: Response) {
         }
 
         const { propertyId, appointmentDate, appointmentTime, notes, isPreBooked } = req.body as CreateAppointmentInput;
+        const resolvedProperty = await resolvePropertyId(propertyId);
 
-        // Check if property exists
-        const property = await prisma.property.findUnique({
-            where: { id: propertyId }
-        });
-
-        if (!property) {
+        if (!resolvedProperty) {
             return res.status(404).json({ message: "Property not found" });
         }
 
@@ -35,7 +73,7 @@ export async function createAppointment(req: Request, res: Response) {
         const appointment = await prisma.appointment.create({
             data: {
                 userId,
-                propertyId,
+                propertyId: resolvedProperty.resolvedPropertyId,
                 appointmentDate: new Date(appointmentDate),
                 appointmentTime,
                 notes,
@@ -68,7 +106,7 @@ export async function createAppointment(req: Request, res: Response) {
                 userId,
                 type: NotificationType.APPOINTMENT_CREATED,
                 title: "Appointment booked",
-                description: `Your appointment for ${property.title} has been scheduled successfully.`,
+                description: `Your appointment for ${resolvedProperty.propertyTitle} has been scheduled successfully.`,
                 data: {
                     appointmentId: appointment.id,
                     propertyId: appointment.propertyId,
@@ -111,7 +149,11 @@ export async function getAppointments(req: Request, res: Response) {
             where.status = status;
         }
         if (propertyId) {
-            where.propertyId = propertyId;
+            const resolvedProperty = await resolvePropertyId(propertyId);
+            if (!resolvedProperty) {
+                return res.status(404).json({ message: "Property not found" });
+            }
+            where.propertyId = resolvedProperty.resolvedPropertyId;
         }
 
         // Calculate pagination
@@ -403,17 +445,13 @@ export async function getPropertyAppointments(req: Request, res: Response) {
         const limit = Number(query.limit) || 10;
         const status = query.status;
 
-        // Check if property exists
-        const property = await prisma.property.findUnique({
-            where: { id: propertyId }
-        });
-
-        if (!property) {
+        const resolvedProperty = await resolvePropertyId(propertyId);
+        if (!resolvedProperty) {
             return res.status(404).json({ message: "Property not found" });
         }
 
         // Build where clause
-        const where: any = { propertyId, userId };
+        const where: any = { propertyId: resolvedProperty.resolvedPropertyId, userId };
         if (status) {
             where.status = status;
         }
