@@ -321,20 +321,95 @@ export async function getProperty(req: Request<Params>, res: Response) {
 
 export async function updateProperty(req: Request<Params>, res: Response) {
     try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
         const { id } = req.params;
         type UpdatePropertyInput = z.infer<typeof updatePropertySchema>;
         const body = req.body as UpdatePropertyInput;
-        const { ...propertyData } = body;
-        const property = await prisma.property.update({
+        const { media, status, ...propertyData } = body;
+
+        const existingProperty = await prisma.property.findFirst({
             where: {
                 id,
-                userId: req.user?.id
+                userId,
             },
-            data: propertyData,
+            include: {
+                media: {
+                    orderBy: { order: "asc" }
+                }
+            }
         });
+
+        if (!existingProperty) {
+            return res.status(404).json({
+                message: "Property not found or not owned by user",
+            });
+        }
+
+        let nextStatus = status;
+
+        // If editing a draft through regular update endpoint and data is complete,
+        // auto-publish to ACTIVE unless client explicitly sets another status.
+        if (!nextStatus && existingProperty.status === "DRAFT") {
+            const mediaForValidation = media !== undefined
+                ? media
+                : existingProperty.media.map((m) => ({
+                    url: m.url,
+                    key: m.key,
+                    mediaType: m.mediaType,
+                    order: m.order,
+                }));
+
+            const publishValidation = addPropertySchema.safeParse({
+                ...existingProperty,
+                ...propertyData,
+                status: "ACTIVE",
+                media: mediaForValidation,
+            });
+
+            if (publishValidation.success) {
+                nextStatus = "ACTIVE";
+            }
+        }
+
+        const property = await prisma.property.update({
+            where: {
+                id
+            },
+            data: {
+                ...propertyData,
+                ...(nextStatus ? { status: nextStatus } : {}),
+            },
+        });
+
+        // If media is provided, replace property media with the provided list.
+        if (media !== undefined) {
+            await prisma.propertyMedia.deleteMany({
+                where: { propertyId: id }
+            });
+
+            if (media.length > 0) {
+                await prisma.propertyMedia.createMany({
+                    data: media.map((m, index) => ({
+                        ...m,
+                        propertyId: id,
+                        order: m.order ?? index,
+                    })),
+                });
+            }
+        }
+
+        const updatedProperty = await prisma.property.findUnique({
+            where: { id },
+            include: { media: true }
+        });
+
         return res.status(200).json({
             success: true,
-            data: property
+            data: updatedProperty ?? property
         })
 
     } catch (error: any) {

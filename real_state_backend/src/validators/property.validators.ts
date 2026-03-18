@@ -450,6 +450,9 @@ export const updatePropertySchema = z.object({
     locationAdvantages: z.array(z.string()).optional(),
     coveredParking: z.number().int().min(0).optional(),
     uncoveredParking: z.number().int().min(0).optional(),
+
+    // Media
+    media: z.array(propertyMediaSchema).optional(),
 });
 
 export const addMediaSchema = z.object({
