@@ -210,9 +210,9 @@ enum Category {
   COMMERCIAL
   AGRICULTURAL
 }
-
+  
 enum FurnishingStatus {
-  Furnished
+  FullyFurnished
   SemiFurnished
   Unfurnished
   FencedWired
