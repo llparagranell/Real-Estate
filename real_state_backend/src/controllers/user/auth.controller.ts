@@ -398,11 +398,12 @@ export async function sendOtp(req: Request, res: Response) {
 
 export async function verifyOtpEmail(req: Request, res: Response) {
     try {
-        const { email, code } = req.body;
+        const { email, code, otp, otpCode } = req.body;
+        const normalizedCode = code || otp || otpCode;
         if (!email) {
             return res.status(400).json({ message: "Please enter a valid email" });
         }
-        if (!code) {
+        if (!normalizedCode) {
             return res.status(400).json({ message: "Please enter otp" });
         }
 
@@ -423,7 +424,7 @@ export async function verifyOtpEmail(req: Request, res: Response) {
             });
         }
 
-        if (pendingSignup.otpCode !== code) {
+        if (pendingSignup.otpCode !== normalizedCode) {
             return res.status(400).json({ error: "Invalid OTP. Please enter correct otp" });
         }
 
