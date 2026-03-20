@@ -77,9 +77,9 @@ export function PropertyActionBar({
         : `/property/all-listings/${propertyId}/edit`
 
     const isExclusiveSold = exclusiveStatus === "SOLD_OUT"
-    const soldToggleLabel = isExclusive
-        ? "Mark as Sold"
-        : (isSold || isExclusiveSold ? "Mark as Available" : "Mark as Sold")
+    const soldToggleLabel = (isExclusive ? isExclusiveSold : (isSold || isExclusiveSold))
+        ? "Mark as Available"
+        : "Mark as Sold"
     const listUnlistLabel = isListed ? "Unlist Property" : "List Property"
 
     const [soldConfirmOpen, setSoldConfirmOpen] = useState(false)

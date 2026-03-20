@@ -204,6 +204,7 @@ export function MakeExclusiveForm() {
     const [mediaItems, setMediaItems] = useState<MediaEntry[]>([]);
     const [isUploadingMedia, setIsUploadingMedia] = useState(false);
     const [previewMedia, setPreviewMedia] = useState<MediaEntry | null>(null);
+    const [deleteMediaIndex, setDeleteMediaIndex] = useState<number | null>(null);
 
     const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
         setForm((prev) => ({ ...prev, [key]: value }));
@@ -397,7 +398,13 @@ export function MakeExclusiveForm() {
     };
 
     const handleDeleteMedia = (index: number) => {
-        setMediaItems((prev) => prev.filter((_, i) => i !== index).map((m, i) => ({ ...m, order: i })));
+        setDeleteMediaIndex(index);
+    };
+
+    const handleDeleteMediaConfirm = () => {
+        if (deleteMediaIndex == null) return;
+        setMediaItems((prev) => prev.filter((_, i) => i !== deleteMediaIndex).map((m, i) => ({ ...m, order: i })));
+        setDeleteMediaIndex(null);
     };
 
     const handleSubmit = async () => {
@@ -558,6 +565,23 @@ export function MakeExclusiveForm() {
                                     unoptimized
                                 />
                             ) : null}
+                        </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={deleteMediaIndex !== null} onOpenChange={(open) => !open && setDeleteMediaIndex(null)}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Delete Media</DialogTitle>
+                            </DialogHeader>
+                            <p className="text-sm text-muted-foreground">Are you sure you want to delete this media file?</p>
+                            <div className="flex justify-end gap-2 pt-2">
+                                <Button type="button" variant="outline" onClick={() => setDeleteMediaIndex(null)}>
+                                    Cancel
+                                </Button>
+                                <Button type="button" variant="destructive" onClick={handleDeleteMediaConfirm}>
+                                    Delete
+                                </Button>
+                            </div>
                         </DialogContent>
                     </Dialog>
 
