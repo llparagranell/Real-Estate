@@ -1,5 +1,6 @@
 import { prisma } from "../../config/prisma";
 import { Request, Response } from "express";
+import { sendAccountBlockedEmail } from "../../services/otp.service";
 export async function getAllUsers(req: Request, res: Response) {
     try {
         const users = await prisma.user.findMany({
@@ -170,7 +171,7 @@ export async function blockUser(req: Request, res: Response) {
         if (role === "SUPER_ADMIN") {
             const existingUser = await prisma.user.findUnique({
                 where: { id },
-                select: { id: true, isBlocked: true },
+                select: { id: true, isBlocked: true, email: true },
             });
 
             if (!existingUser) {
@@ -189,6 +190,16 @@ export async function blockUser(req: Request, res: Response) {
                     blockedOn: new Date(),
                 },
             });
+
+            await prisma.refreshToken.deleteMany({
+                where: { userId: id },
+            });
+
+            try {
+                await sendAccountBlockedEmail(existingUser.email);
+            } catch (emailError) {
+                console.error("Block user email error:", emailError);
+            }
 
             return res.status(200).json({ message: "User blocked successfully" });
         } else if (role === "ADMIN") {
@@ -277,7 +288,23 @@ export async function reviewBanRequest(req: Request, res: Response) {
                     where: { id: request.userId },
                     data: { isBlocked: true, blockedBy: staffId, blockedOn: new Date() },
                 }),
+                prisma.refreshToken.deleteMany({
+                    where: { userId: request.userId },
+                }),
             ]);
+
+            try {
+                const blockedUser = await prisma.user.findUnique({
+                    where: { id: request.userId },
+                    select: { email: true },
+                });
+                if (blockedUser?.email) {
+                    await sendAccountBlockedEmail(blockedUser.email);
+                }
+            } catch (emailError) {
+                console.error("Ban approval email error:", emailError);
+            }
+
             return res.status(200).json({ message: "Ban request approved and user blocked successfully" });
         } else if (decision === "REJECTED") {
             await prisma.banRequest.update({

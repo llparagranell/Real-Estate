@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { TokenPayload, verifyAccessToken } from "../utils/jwt";
+import { prisma } from "../config/prisma";
 
 declare global {
     namespace Express {
@@ -9,7 +10,7 @@ declare global {
     }
 }
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction){
+export async function authMiddleware(req: Request, res: Response, next: NextFunction){
     try{
         // Try cookie first (httpOnly), then Authorization header (backward compatibility)
         let token: string | undefined = req.cookies?.accessToken;
@@ -24,6 +25,27 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction){
             return;
         }
         const payload = verifyAccessToken(token);
+
+        if (payload.role === "user") {
+            const user = await prisma.user.findUnique({
+                where: { id: payload.id },
+                select: { id: true, isBlocked: true },
+            });
+
+            if (!user) {
+                res.status(401).json({ error: "User not found" });
+                return;
+            }
+
+            if (user.isBlocked) {
+                res.status(403).json({
+                    error: "Your account is blocked. Contact contact@realbro.io or 8085671414",
+                    code: "ACCOUNT_BLOCKED",
+                });
+                return;
+            }
+        }
+
         req.user = payload;
         next();
     } catch (err) {

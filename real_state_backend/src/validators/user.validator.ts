@@ -22,6 +22,7 @@ export const signupSchema = z.object({
     panNo: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Invalid PAN format"),
     kycPanImageUrl: z.string().url("Invalid PAN image URL"),
     kycPanImageKey: z.string().min(1, "PAN image key is required"),
+    otpCode: z.string().length(6, "OTP must be 6 digits").optional(),
 });
 
 export const signinSchema = z.object({

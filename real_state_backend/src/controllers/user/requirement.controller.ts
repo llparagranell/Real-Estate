@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
 import { CreateRequirementInput, UpdateRequirementInput } from "../../validators/requirement.validators";
+import { createAndSendUserNotification } from "../../services/notification.service";
 
 export async function createRequirement(req: Request, res: Response) {
     try {
@@ -23,6 +24,20 @@ export async function createRequirement(req: Request, res: Response) {
                 currency,
             },
         });
+
+        try {
+            await createAndSendUserNotification({
+                userId,
+                type: "GENERIC" as any,
+                title: "Requirement submitted",
+                description: "Your property requirement has been submitted successfully.",
+                data: {
+                    requirementId: requirement.id,
+                },
+            });
+        } catch (notificationError) {
+            console.error("Requirement notification error:", notificationError);
+        }
 
         return res.status(201).json({ success: true, data: requirement });
     } catch (error) {

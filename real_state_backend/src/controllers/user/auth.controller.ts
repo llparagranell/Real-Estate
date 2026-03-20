@@ -4,8 +4,9 @@ import { signAccessToken, signRefreshToken } from "../../utils/jwt";
 import { Request, Response } from "express";
 import { generateReferralCode } from "../../utils/generateReferralCode";
 import { verifyRefreshToken } from "../../utils/jwt";
-import { createOtp, generateOtpCode, sendOtpEmail, verifyOtp, verifyOtp as verifyOtpService } from "../../services/otp.service";
-import { OtpType } from "@prisma/client";
+import { createOtp, generateOtpCode, sendOtpEmail, verifyOtp } from "../../services/otp.service";
+
+const SIGNUP_OTP_EXPIRY_MINUTES = 5;
 
 //check status codes at last
 export async function signup(req: Request, res: Response) {
@@ -15,23 +16,37 @@ export async function signup(req: Request, res: Response) {
     }
     try {
         const {
-            firstName, lastName, email, phone, password, age, gender, avatar, avatarKey, referrerId,
+            firstName, lastName, email, phone, password, age, gender, avatar, avatarKey, referrerId, otpCode,
             aadharNo, kycAadharImageUrl, kycAadharImageKey,
             panNo, kycPanImageUrl, kycPanImageKey
         } = req.body;
         if (!req.body) {
             return res.status(404).json("Please fill all the details")
         }
-        
-        // Check if referrerId is provided
+
         if (!referrerId) {
             return res.status(400).json({
                 error: "Referrer ID is required",
                 field: "referrerId"
             });
         }
-        
-        // Check if referral code is valid
+
+        const existingEmailUser = await prisma.user.findUnique({ where: { email } });
+        if (existingEmailUser) {
+            return res.status(400).json({
+                error: "Email already registered",
+                field: "email"
+            });
+        }
+
+        const existingPhoneUser = await prisma.user.findUnique({ where: { phone } });
+        if (existingPhoneUser) {
+            return res.status(400).json({
+                error: "Phone number already registered",
+                field: "phone"
+            });
+        }
+
         const referrer = await prisma.user.findUnique({
             where: { referralCode: referrerId }
         });
@@ -41,43 +56,125 @@ export async function signup(req: Request, res: Response) {
                 field: "referrerId"
             });
         }
-        
-        let userReferralCode = generateReferralCode(firstName);
-        // create user
+
+        const pendingSignup = await (prisma as any).pendingSignup.findUnique({
+            where: { email }
+        });
+
+        // Step 1: send OTP and persist signup details only in pending storage.
+        if (!otpCode) {
+            const signupOtp = generateOtpCode();
+            const otpExpiresAt = new Date(Date.now() + SIGNUP_OTP_EXPIRY_MINUTES * 60 * 1000);
+
+            await (prisma as any).pendingSignup.upsert({
+                where: { email },
+                create: {
+                    firstName: capitalizeFirstLetter(firstName),
+                    lastName: capitalizeFirstLetter(lastName),
+                    email,
+                    phone,
+                    passwordHash: await hashPassword(password),
+                    age,
+                    gender,
+                    avatar,
+                    avatarKey,
+                    referrerDbUserId: referrer.id,
+                    aadharNo,
+                    kycAadharImageUrl,
+                    kycAadharImageKey,
+                    panNo,
+                    kycPanImageUrl,
+                    kycPanImageKey,
+                    otpCode: signupOtp,
+                    otpExpiresAt,
+                },
+                update: {
+                    firstName: capitalizeFirstLetter(firstName),
+                    lastName: capitalizeFirstLetter(lastName),
+                    phone,
+                    passwordHash: await hashPassword(password),
+                    age,
+                    gender,
+                    avatar,
+                    avatarKey,
+                    referrerDbUserId: referrer.id,
+                    aadharNo,
+                    kycAadharImageUrl,
+                    kycAadharImageKey,
+                    panNo,
+                    kycPanImageUrl,
+                    kycPanImageKey,
+                    otpCode: signupOtp,
+                    otpExpiresAt,
+                }
+            });
+
+            await sendOtpEmail(email, signupOtp);
+            return res.status(200).json({
+                message: "OTP sent to email. Submit signup again with otpCode to complete registration.",
+                requiresOtp: true,
+            });
+        }
+
+        // Step 2: verify OTP from pending signup and then create account.
+        if (!pendingSignup || pendingSignup.phone !== phone) {
+            return res.status(400).json({
+                error: "Signup session expired or mismatched. Please start signup again.",
+            });
+        }
+
+        if (pendingSignup.otpExpiresAt < new Date()) {
+            return res.status(400).json({
+                error: "OTP expired. Please signup again to receive a new OTP.",
+            });
+        }
+
+        if (pendingSignup.otpCode !== otpCode) {
+            return res.status(400).json({
+                error: "Invalid OTP",
+            });
+        }
+
+        let userReferralCode = generateReferralCode(pendingSignup.firstName);
         const user = await prisma.user.create({
             data: {
-                firstName: capitalizeFirstLetter(firstName),
-                lastName: capitalizeFirstLetter(lastName),
-                email,
-                phone,
-                password: await hashPassword(password),
-                age,
-                gender,
-                avatar,
-                avatarKey,
+                firstName: pendingSignup.firstName,
+                lastName: pendingSignup.lastName,
+                email: pendingSignup.email,
+                phone: pendingSignup.phone,
+                password: pendingSignup.passwordHash,
+                age: pendingSignup.age,
+                gender: pendingSignup.gender,
+                avatar: pendingSignup.avatar,
+                avatarKey: pendingSignup.avatarKey,
                 referralCode: userReferralCode,
-                referrerId: referrer.id,
+                referrerId: pendingSignup.referrerDbUserId,
+                isEmailVerified: true,
                 kyc: {
                     create: [
                         {
                             type: "AADHARCARD",
-                            docNo: aadharNo,
-                            imageUrl: kycAadharImageUrl,
-                            imageKey: kycAadharImageKey,
+                            docNo: pendingSignup.aadharNo,
+                            imageUrl: pendingSignup.kycAadharImageUrl,
+                            imageKey: pendingSignup.kycAadharImageKey,
                             status: "PENDING",
                         },
                         {
                             type: "PANCARD",
-                            docNo: panNo,
-                            imageUrl: kycPanImageUrl,
-                            imageKey: kycPanImageKey,
+                            docNo: pendingSignup.panNo,
+                            imageUrl: pendingSignup.kycPanImageUrl,
+                            imageKey: pendingSignup.kycPanImageKey,
                             status: "PENDING",
                         }
                     ]
                 }
             }
-        })
-        //write logic to award points to one to referrers after clarification from team.
+        });
+
+        await (prisma as any).pendingSignup.delete({
+            where: { email: pendingSignup.email }
+        });
+
         const accessToken = signAccessToken({ id: user.id, role: "user" });
         const refreshToken = signRefreshToken({ id: user.id, role: "user" });
         await prisma.refreshToken.create({
@@ -87,7 +184,13 @@ export async function signup(req: Request, res: Response) {
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             }
         });
-        return res.json({ accessToken, refreshToken, user })
+
+        return res.status(201).json({
+            message: "Signup completed successfully",
+            accessToken,
+            refreshToken,
+            user,
+        });
     } catch (error: any) {
         console.error("Signup error:", error);
         
@@ -103,6 +206,12 @@ export async function signup(req: Request, res: Response) {
             if (field === 'phone') {
                 return res.status(400).json({
                     error: "Phone number already registered",
+                    field: "phone"
+                });
+            }
+            if (field === 'PendingSignup_phone_key' || field === 'phone_key') {
+                return res.status(400).json({
+                    error: "A signup is already pending with this phone number",
                     field: "phone"
                 });
             }
@@ -130,6 +239,21 @@ export async function signin(req: Request, res: Response) {
         if (!user) {
             return res.status(401).json({ message: "Invalid credentials" })
         }
+
+        if (user.isBlocked) {
+            return res.status(403).json({
+                error: "Your account is blocked. Contact contact@realbro.io or 8085671414",
+                code: "ACCOUNT_BLOCKED",
+            });
+        }
+
+        if (!user.isEmailVerified) {
+            return res.status(403).json({
+                error: "Email not verified. Please verify OTP first.",
+                code: "EMAIL_NOT_VERIFIED",
+            });
+        }
+
         //check password
         const isValid = await comparePassword(password,user.password);
         if (!isValid) {
@@ -202,6 +326,23 @@ export async function refreshAccessToken(req: Request, res: Response) {
         if (!storedToken) {
             return res.status(401).json({ error: "Token revoked or expired" });
         }
+
+        const user = await prisma.user.findUnique({
+            where: { id: payload.id },
+            select: { id: true, isBlocked: true },
+        });
+
+        if (!user) {
+            return res.status(401).json({ error: "User not found" });
+        }
+
+        if (user.isBlocked) {
+            return res.status(403).json({
+                error: "Your account is blocked. Contact contact@realbro.io or 8085671414",
+                code: "ACCOUNT_BLOCKED",
+            });
+        }
+
         const newAccessToken = signAccessToken({ id: payload.id, role: "user" });
 
         return res.json({ accessToken: newAccessToken });

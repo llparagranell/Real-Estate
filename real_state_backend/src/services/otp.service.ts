@@ -138,3 +138,29 @@ export async function sendOtpEmail (email: string, otp: string){
         throw new Error(`Failed to send email: ${error}`);
     }
 }
+
+export async function sendAccountBlockedEmail(email: string) {
+    try {
+        const { data, error } = await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+            to: [email],
+            subject: 'Your Realbro account has been blocked',
+            html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #333;">Account Blocked</h2>
+              <p>Your Realbro account has been blocked by the admin team.</p>
+              <p>If you think this is a mistake, please contact us:</p>
+              <p style="margin: 0;">Email: <strong>contact@realbro.io</strong></p>
+              <p style="margin: 8px 0 0;">Phone: <strong>8085671414</strong></p>
+            </div>
+          `,
+        });
+
+        if (error) {
+            throw new Error(`Failed to send blocked email: ${error}`);
+        }
+        return data;
+    } catch (error) {
+        throw new Error(`Failed to send blocked email: ${error}`);
+    }
+}

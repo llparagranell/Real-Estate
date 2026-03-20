@@ -564,6 +564,37 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+model PendingSignup {
+  id               String   @id @default(cuid())
+  firstName        String
+  lastName         String
+  email            String   @unique
+  phone            String   @unique
+  passwordHash     String
+  age              Int
+  gender           Gender
+  avatar           String?
+  avatarKey        String?
+  referrerDbUserId String
+
+  aadharNo         String
+  kycAadharImageUrl String
+  kycAadharImageKey String
+  panNo            String
+  kycPanImageUrl   String
+  kycPanImageKey   String
+
+  otpCode          String
+  otpExpiresAt     DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([phone])
+  @@map("pending_signups")
+}
+
 // Customer Support
 
 enum TicketStatus {
