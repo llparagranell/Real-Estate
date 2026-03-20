@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/popover"
 import { Bookmark, ChevronDown, Settings2Icon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { api } from "@/lib/api"
 
 /** Schema: RESIDENTIAL, COMMERCIAL, AGRICULTURAL */
 export type CategoryFilter = "" | "RESIDENTIAL" | "COMMERCIAL" | "AGRICULTURAL"
@@ -73,6 +74,17 @@ interface PropertiesFilterProps {
     showBookmarkOption?: boolean
 }
 
+type MetadataCategoryRow = {
+    category: string
+    types: string[]
+}
+
+const VALID_CATEGORIES: Exclude<CategoryFilter, "">[] = ["RESIDENTIAL", "COMMERCIAL", "AGRICULTURAL"]
+
+function isCategoryFilter(value: string): value is Exclude<CategoryFilter, ""> {
+    return VALID_CATEGORIES.includes(value as Exclude<CategoryFilter, "">)
+}
+
 export function PropertiesFilter({
     filters,
     onFiltersChange,
@@ -80,6 +92,51 @@ export function PropertiesFilter({
 }: PropertiesFilterProps) {
     const [open, setOpen] = useState(false)
     const [draft, setDraft] = useState<PropertiesFilterState>(filters)
+    const [typesByCategory, setTypesByCategory] = useState<Record<Exclude<CategoryFilter, "">, string[]>>({
+        RESIDENTIAL: [],
+        COMMERCIAL: [],
+        AGRICULTURAL: [],
+    })
+    const [isLoadingPropertyTypes, setIsLoadingPropertyTypes] = useState(false)
+    const [propertyTypesLoadError, setPropertyTypesLoadError] = useState(false)
+
+    useEffect(() => {
+        let mounted = true
+        const loadCategoryTypes = async () => {
+            try {
+                setIsLoadingPropertyTypes(true)
+                setPropertyTypesLoadError(false)
+                const response = await api.get<{ success: boolean; data: MetadataCategoryRow[] }>("/metadata/property-categories")
+                if (!mounted) return
+                const next: Record<Exclude<CategoryFilter, "">, string[]> = {
+                    RESIDENTIAL: [],
+                    COMMERCIAL: [],
+                    AGRICULTURAL: [],
+                }
+                for (const row of response.data.data ?? []) {
+                    if (!row?.category || !Array.isArray(row.types)) continue
+                    if (!isCategoryFilter(row.category)) continue
+                    next[row.category] = row.types.filter((type) => typeof type === "string" && type.trim().length > 0)
+                }
+                setTypesByCategory(next)
+            } catch (error) {
+                if (!mounted) return
+                setPropertyTypesLoadError(true)
+                console.error("Failed to fetch property categories metadata:", error)
+            } finally {
+                if (mounted) setIsLoadingPropertyTypes(false)
+            }
+        }
+        void loadCategoryTypes()
+        return () => {
+            mounted = false
+        }
+    }, [])
+
+    const categoryScopedPropertyTypes = useMemo(() => {
+        if (!draft.category) return []
+        return typesByCategory[draft.category] ?? []
+    }, [draft.category, typesByCategory])
 
     const handleOpenChange = (nextOpen: boolean) => {
         setOpen(nextOpen)
@@ -128,9 +185,14 @@ export function PropertiesFilter({
                         <Label className="text-sm font-medium">Property category</Label>
                         <select
                             value={draft.category}
-                            onChange={(e) =>
-                                setDraft((p) => ({ ...p, category: e.target.value as CategoryFilter }))
-                            }
+                            onChange={(e) => {
+                                const selectedCategory = e.target.value as CategoryFilter
+                                setDraft((p) => ({
+                                    ...p,
+                                    category: selectedCategory,
+                                    propertyType: "",
+                                }))
+                            }}
                             className="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                         >
                             {CATEGORY_OPTIONS.map(({ value, label }) => (
@@ -143,14 +205,34 @@ export function PropertiesFilter({
 
                     <div>
                         <Label className="text-sm font-medium">Property type</Label>
-                        <Input
-                            placeholder="Any property type"
-                            value={draft.propertyType}
-                            onChange={(e) =>
-                                setDraft((p) => ({ ...p, propertyType: e.target.value }))
-                            }
-                            className="mt-1.5 h-9"
-                        />
+                        {propertyTypesLoadError ? (
+                            <Input
+                                placeholder="Any property type"
+                                value={draft.propertyType}
+                                onChange={(e) =>
+                                    setDraft((p) => ({ ...p, propertyType: e.target.value }))
+                                }
+                                className="mt-1.5 h-9"
+                            />
+                        ) : (
+                            <select
+                                value={draft.propertyType}
+                                onChange={(e) =>
+                                    setDraft((p) => ({ ...p, propertyType: e.target.value }))
+                                }
+                                disabled={isLoadingPropertyTypes || !draft.category}
+                                className="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-70"
+                            >
+                                {!draft.category && <option value="">Select category first</option>}
+                                {isLoadingPropertyTypes && <option value="">Loading property types...</option>}
+                                {!isLoadingPropertyTypes && draft.category && <option value="">All</option>}
+                                {!isLoadingPropertyTypes && draft.category && categoryScopedPropertyTypes.map((typeOption) => (
+                                    <option key={typeOption} value={typeOption}>
+                                        {typeOption}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                     </div>
 
                     <div>
