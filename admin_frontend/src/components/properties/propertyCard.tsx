@@ -84,7 +84,6 @@ const statusColors: Record<string, string> = {
     SOLDEXCLUSIVEPROPERTY: "bg-purple-500",
     PENDING_EXCLUSIVE_ACQUISITION: "bg-amber-500",
     SOLD_OUT: "bg-red-500",
-    ARCHIVED: "bg-gray-600",
 }
 const defaultStatusColor = "bg-gray-500"
 

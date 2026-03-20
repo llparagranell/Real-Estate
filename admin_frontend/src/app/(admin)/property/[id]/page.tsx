@@ -143,9 +143,18 @@ export default function PropertyPage() {
 
     const handleListUnlist = async () => {
         if (!property) return
-        const nextStatus = property.status === "ACTIVE" ? "UNLISTED" : "ACTIVE"
+        const isExclusive = Boolean(property.exclusiveProperty)
+        const isCurrentlyListed = isExclusive
+            ? property.exclusiveProperty?.status === "ACTIVE"
+            : property.status === "ACTIVE"
+        const nextStatus = isCurrentlyListed ? "UNLISTED" : "ACTIVE"
         try {
-            await api.put(`/staff/properties/${property.id}/status`, { status: nextStatus })
+            await api.put(
+                `/staff/properties/${property.id}/status`,
+                isExclusive
+                    ? { status: nextStatus, target: "exclusive" }
+                    : { status: nextStatus },
+            )
             await loadProperty()
         } catch (err) {
             console.error("Failed to update listing status:", err)
@@ -291,7 +300,9 @@ export default function PropertyPage() {
                         isBoughtByRealbro={property.status === "SOLDTOREALBRO"}
                         isExclusive={Boolean(property.exclusiveProperty)}
                         exclusivePropertyId={property.exclusiveProperty?.id}
-                        isListed={property.status === "ACTIVE"}
+                        isListed={property.exclusiveProperty
+                            ? property.exclusiveProperty.status === "ACTIVE"
+                            : property.status === "ACTIVE"}
                         isSold={SOLD_STATUSES.includes(property.status)}
                         exclusiveStatus={property.exclusiveProperty?.status}
                         onListUnlist={handleListUnlist}

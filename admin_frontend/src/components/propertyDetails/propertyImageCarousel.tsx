@@ -14,7 +14,7 @@ export type PropertyStatus =
     | "SOLDEXCLUSIVEPROPERTY"
     | "PENDING_EXCLUSIVE_ACQUISITION"
 
-export type ExclusivePropertyStatus = "ACTIVE" | "SOLD_OUT" | "ARCHIVED"
+export type ExclusivePropertyStatus = "ACTIVE" | "SOLD_OUT" | "UNLISTED"
 
 export type MediaItem = { url: string; mediaType: string }
 
@@ -54,7 +54,7 @@ function getStatusBadge(
     if (isExclusive) {
         const status = exclusiveStatus ?? "ACTIVE"
         if (status === "SOLD_OUT") return { label: formatStatusLabel("SOLD_OUT"), className: "bg-red-600" }
-        if (status === "ARCHIVED") return { label: formatStatusLabel("ARCHIVED"), className: "bg-gray-600" }
+        if (status === "UNLISTED") return { label: formatStatusLabel("UNLISTED"), className: "bg-gray-600" }
         return { label: formatStatusLabel("ACTIVE"), className: "bg-green-600" }
     }
 

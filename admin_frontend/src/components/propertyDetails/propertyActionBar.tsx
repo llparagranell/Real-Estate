@@ -27,7 +27,7 @@ interface PropertyActionBarProps {
     isListed: boolean
     /** Property is sold (any sold status) */
     isSold: boolean
-    /** For exclusive: exclusive status ACTIVE/SOLD_OUT/ARCHIVED */
+    /** For exclusive: exclusive status ACTIVE/SOLD_OUT/UNLISTED */
     exclusiveStatus?: string
     onListUnlist?: () => void | Promise<void>
     onMarkSold?: () => void | Promise<void>

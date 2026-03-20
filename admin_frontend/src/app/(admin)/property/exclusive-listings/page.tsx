@@ -24,7 +24,7 @@ import { fetchBookmarkedPropertyIds, toggleBookmark } from "@/lib/bookmarks"
 type ExclusiveApiRow = {
     id: string
     title: string
-    status: "ACTIVE" | "SOLD_OUT" | "ARCHIVED"
+        status: "ACTIVE" | "SOLD_OUT" | "UNLISTED"
     listingPrice: number | null
     city: string | null
     locality: string | null

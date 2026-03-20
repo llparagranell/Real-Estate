@@ -11,7 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { CheckCircle, Loader2, X } from "lucide-react";
 
-type ExclusiveStatus = "ACTIVE" | "SOLD_OUT" | "ARCHIVED";
+type ExclusiveStatus = "ACTIVE" | "SOLD_OUT" | "UNLISTED";
+type CategoryValue = "" | "RESIDENTIAL" | "COMMERCIAL" | "AGRICULTURAL";
+
+type MetadataCategoryRow = {
+    category: string;
+    types: string[];
+};
 
 type ExistingProperty = {
     fixedRewardGems?: number | null;
@@ -60,7 +66,7 @@ type FormState = {
     locality: string;
     subLocality: string;
     address: string;
-    category: "" | "RESIDENTIAL" | "COMMERCIAL" | "AGRICULTURAL";
+    category: CategoryValue;
     propertyType: string;
     furnishingStatus: "" | "FullyFurnished" | "SemiFurnished" | "Unfurnished" | "FencedWired" | "FertileLand" | "OpenLand" | "Cultivated";
     availabilityStatus: "" | "ReadyToMove" | "UnderConstruction";
@@ -146,6 +152,12 @@ export function EditExclusiveProperty() {
         negotiablePrice: false,
         govtChargesTaxIncluded: false,
     });
+    const [typesByCategory, setTypesByCategory] = useState<Record<Exclude<CategoryValue, "">, string[]>>({
+        RESIDENTIAL: [],
+        COMMERCIAL: [],
+        AGRICULTURAL: [],
+    });
+    const [isLoadingPropertyTypes, setIsLoadingPropertyTypes] = useState(false);
 
     const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
         setForm((prev) => ({ ...prev, [key]: value }));
@@ -214,6 +226,39 @@ export function EditExclusiveProperty() {
             mounted = false;
         };
     }, [propertyId]);
+
+    useEffect(() => {
+        let mounted = true;
+        const loadPropertyTypes = async () => {
+            try {
+                setIsLoadingPropertyTypes(true);
+                const response = await api.get<{ success: boolean; data: MetadataCategoryRow[] }>("/metadata/property-categories");
+                if (!mounted) return;
+                const next: Record<Exclude<CategoryValue, "">, string[]> = {
+                    RESIDENTIAL: [],
+                    COMMERCIAL: [],
+                    AGRICULTURAL: [],
+                };
+                for (const row of response.data.data ?? []) {
+                    if (!row?.category || !Array.isArray(row.types)) continue;
+                    if (!["RESIDENTIAL", "COMMERCIAL", "AGRICULTURAL"].includes(row.category)) continue;
+                    next[row.category as Exclude<CategoryValue, "">] = row.types.filter((t) => typeof t === "string" && t.trim().length > 0);
+                }
+                setTypesByCategory(next);
+            } catch (err) {
+                console.error("Failed to load property type metadata:", err);
+            } finally {
+                if (mounted) setIsLoadingPropertyTypes(false);
+            }
+        };
+        void loadPropertyTypes();
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const propertyTypeOptions = form.category ? typesByCategory[form.category] ?? [] : [];
+    const hasCustomPropertyType = Boolean(form.propertyType) && !propertyTypeOptions.includes(form.propertyType);
 
     const handleSubmit = async () => {
         setError(null);
@@ -314,6 +359,7 @@ export function EditExclusiveProperty() {
                                 <SelectContent className="font-medium">
                                     <SelectItem value="ACTIVE">ACTIVE</SelectItem>
                                     <SelectItem value="SOLD_OUT">SOLD OUT</SelectItem>
+                                    <SelectItem value="UNLISTED">UNLISTED</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -354,10 +400,16 @@ export function EditExclusiveProperty() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-1.5">
                             <FieldLabel>Category</FieldLabel>
-                            <Select value={form.category} onValueChange={(v) => setField("category", v as FormState["category"])}>
+                            <Select
+                                value={form.category}
+                                onValueChange={(v) => {
+                                    setField("category", v as FormState["category"]);
+                                    setField("propertyType", "");
+                                }}
+                            >
                                 <SelectTrigger className="h-10 border-2 bg-white w-full"><SelectValue placeholder="Select category" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="RESIDENTIAL">RESIDENTIAL</SelectItem>
@@ -368,12 +420,42 @@ export function EditExclusiveProperty() {
                         </div>
                         <div className="space-y-1.5">
                             <FieldLabel>Property Type</FieldLabel>
-                            <Input
+                            <select
                                 value={form.propertyType}
                                 onChange={(e) => setField("propertyType", e.target.value)}
-                                className="h-10 border-2 bg-white"
-                                placeholder="Any property type"
-                            />
+                                disabled={!form.category || isLoadingPropertyTypes}
+                                className="h-10 w-full rounded-md border-2 border-input bg-white px-3 text-sm disabled:opacity-70"
+                            >
+                                {!form.category && <option value="">Select category first</option>}
+                                {isLoadingPropertyTypes && <option value="">Loading property types...</option>}
+                                {!isLoadingPropertyTypes && form.category && <option value="">Select property type</option>}
+                                {hasCustomPropertyType && <option value={form.propertyType}>{form.propertyType} (current)</option>}
+                                {!isLoadingPropertyTypes && form.category && propertyTypeOptions.map((option) => (
+                                    <option key={option} value={option}>
+                                        {option}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <FieldLabel>Furnishing Status</FieldLabel>
+                            <Select
+                                value={form.furnishingStatus}
+                                onValueChange={(v) => setField("furnishingStatus", v as FormState["furnishingStatus"])}
+                            >
+                                <SelectTrigger className="h-10 border-2 bg-white w-full">
+                                    <SelectValue placeholder="Select furnishing status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="FullyFurnished">Fully Furnished</SelectItem>
+                                    <SelectItem value="SemiFurnished">Semi Furnished</SelectItem>
+                                    <SelectItem value="Unfurnished">Unfurnished</SelectItem>
+                                    <SelectItem value="FencedWired">Fenced Wired</SelectItem>
+                                    <SelectItem value="FertileLand">Fertile Land</SelectItem>
+                                    <SelectItem value="OpenLand">Open Land</SelectItem>
+                                    <SelectItem value="Cultivated">Cultivated</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 
