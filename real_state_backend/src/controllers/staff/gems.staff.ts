@@ -3,6 +3,11 @@ import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
 import { verifyOtp, createOtp, sendOtpEmail } from "../../services/otp.service";
 import { creditAndCreateTransactions } from "../../services/gems.service";
+import { createAndSendUserNotification } from "../../services/notification.service";
+import {
+    gemRequestApprovalNotification,
+    gemRequestNotification,
+} from "../../services/Notifications/gems.notification";
 import { resolveStaffActorId } from "./redeem.staff";
 
 
@@ -404,6 +409,24 @@ export async function giveAcquisitionRewardToUser(req: Request, res: Response) {
                 });
             });
 
+            if (request) {
+                const payload = gemRequestApprovalNotification({
+                    userId: targetUserId,
+                    approvedGems: totalGems,
+                    propertyName: request.property?.title ?? null,
+                });
+
+                createAndSendUserNotification({
+                    userId: targetUserId,
+                    type: payload.type,
+                    title: payload.title,
+                    description: payload.description,
+                    data: payload.data,
+                }).catch((notificationError) => {
+                    console.error("Gem approval notification error:", notificationError);
+                });
+            }
+
             return res.status(201).json({
                 success: true,
                 message: "Gems allocated successfully by super admin",
@@ -454,6 +477,22 @@ export async function giveAcquisitionRewardToUser(req: Request, res: Response) {
                     },
                 },
             },
+        });
+
+        const requestReceivedPayload = gemRequestNotification({
+            userId: targetUserId,
+            requestedGems: totalGems,
+            propertyName: request.property?.title ?? null,
+        });
+
+        createAndSendUserNotification({
+            userId: targetUserId,
+            type: requestReceivedPayload.type,
+            title: requestReceivedPayload.title,
+            description: requestReceivedPayload.description,
+            data: requestReceivedPayload.data,
+        }).catch((notificationError) => {
+            console.error("Gem request notification error:", notificationError);
         });
 
         return res.status(201).json({
@@ -588,6 +627,11 @@ export async function approveGemRequest(req: Request, res: Response) {
                 referralUserId: true,
                 baseGems: true,
                 referralGems: true,
+                property: {
+                    select: {
+                        title: true,
+                    },
+                },
             },
         });
         if (!request) {
@@ -622,6 +666,23 @@ export async function approveGemRequest(req: Request, res: Response) {
                         : GemTxnReason.ACQUISITION_REWARD,
                     creditRefferee: true,
                 });
+            });
+
+            const approvedGems = request.baseGems + request.referralGems;
+            const payload = gemRequestApprovalNotification({
+                userId: request.userId,
+                approvedGems,
+                propertyName: request.property?.title ?? null,
+            });
+
+            createAndSendUserNotification({
+                userId: request.userId,
+                type: payload.type,
+                title: payload.title,
+                description: payload.description,
+                data: payload.data,
+            }).catch((notificationError) => {
+                console.error("Gem request approval notification error:", notificationError);
             });
 
             return res.status(200).json({
