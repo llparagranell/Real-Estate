@@ -1,13 +1,27 @@
 import { NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
-    const target = request.nextUrl.searchParams.get("url")
+    let target = request.nextUrl.searchParams.get("url")
 
     if (!target) {
         return new Response(JSON.stringify({ message: "Missing url parameter" }), {
             status: 400,
             headers: { "Content-Type": "application/json" },
         })
+    }
+
+    // Handle Next.js Image Optimization URLs (_next/image?url=...)
+    // Extract the real URL from the url parameter if it's a _next/image endpoint
+    if (target.includes("/_next/image")) {
+        try {
+            const nextImageUrl = new URL(target)
+            const realUrl = nextImageUrl.searchParams.get("url")
+            if (realUrl) {
+                target = realUrl
+            }
+        } catch {
+            // If extraction fails, continue with original target
+        }
     }
 
     let parsedUrl: URL
