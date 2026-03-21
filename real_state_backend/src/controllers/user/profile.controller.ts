@@ -3,6 +3,8 @@ import { prisma } from "../../config/prisma";
 import { hashPassword } from "../../utils/password";
 import { Prisma } from "@prisma/client";
 import { createOtp, sendOtpEmail, verifyOtp } from "../../services/otp.service";
+import { createAndSendUserNotification } from "../../services/notification.service";
+import { updateUserProfiledNotification } from "../../services/Notifications/user.notification";
 
 export async function getProfile(req: Request, res: Response) {
     try {
@@ -172,6 +174,18 @@ export async function updateProfile(req: Request, res: Response) {
                 updatedAt: true,
             },
         })
+
+        const payload = updateUserProfiledNotification({ userId: user.id });
+        createAndSendUserNotification({
+            userId: user.id,
+            type: payload.type,
+            title: payload.title,
+            description: payload.description,
+            data: payload.data,
+        }).catch((notificationError) => {
+            console.error("Profile update notification error:", notificationError);
+        });
+
         return res.status(200).json({
             success: true,
             data: user

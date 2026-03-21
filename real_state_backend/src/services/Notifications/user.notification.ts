@@ -41,9 +41,9 @@ export function updateUserProfiledNotification(input: { userId: string }): {
     data: Prisma.InputJsonValue;
 } {
     return {
-        type: NotificationType.GENERIC,
+        type: NotificationType.PROFILE_UPDATED,
         title: "Profile Updated",
-        description: "Your profile information has been successfully updated.",
+        description: "Your profile information has been successfully updated by realbro.",
         data: {
             action: "profile_updated",
             userId: input.userId,
@@ -58,7 +58,7 @@ export function accountBlockedNotification(input: { userId: string }): {
     data: Prisma.InputJsonValue;
 } {
     return {
-        type: NotificationType.GENERIC,
+        type: NotificationType.ACCOUNT_BLOCKED,
         title: "Account Blocked ⚠️",
         description: "Your account has been suspended. To resolve this, contact: contact@realbro.io | +91-80856-71414",
         data: {
@@ -75,7 +75,7 @@ export function adharVerificationRejectedNotification(input: { userId: string })
     data: Prisma.InputJsonValue;
 } {
     return {
-        type: NotificationType.GENERIC,
+        type: NotificationType.ADHAR_VERIFICATION_REJECTED,
         title: "Adhar Verification Failed ⚠️",
         description: "Your Adhar verification was rejected. Please re-submit your document with correct information.",
         data: {
@@ -92,7 +92,7 @@ export function panVerificationRejectedNotification(input: { userId: string }): 
     data: Prisma.InputJsonValue;
 } {
     return {
-        type: NotificationType.GENERIC,
+        type: NotificationType.PAN_VERIFICATION_REJECTED,
         title: "PAN Verification Failed ⚠️",
         description: "Your PAN verification was rejected. Please re-submit your document with correct information.",
         data: {
