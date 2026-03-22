@@ -85,6 +85,7 @@ type PropertyResponse = {
             id: string
             fixedRewardGems: number
             status: string
+            isExtraRewardOn?: boolean
         } | null
     }
 }
@@ -254,6 +255,7 @@ export default function PropertyPage() {
         return {
             status: statusMap[property.status] ?? property.status,
             statusLabel: property.availabilityStatus?.replace(/([a-z])([A-Z])/g, "$1 $2"),
+            isExtraRewardOn: Boolean(property.exclusiveProperty?.isExtraRewardOn),
             title: property.title,
             location: location || "N/A",
             tags: [

@@ -1,5 +1,6 @@
 "use client"
 
+import { div } from "framer-motion/client"
 import {
     MapPin,
     Home,
@@ -11,6 +12,7 @@ import {
     Bath,
     Sun,
     Layers,
+    Gem,
 } from "lucide-react"
 
 export interface PropertyTag {
@@ -32,6 +34,7 @@ export interface PropertySpecs {
 export interface PropertyDetailsPanelData {
     status: string
     statusLabel?: string
+    isExtraRewardOn?: boolean
     title: string
     location: string
     tags: PropertyTag[]
@@ -62,6 +65,14 @@ export function PropertyDetailsPanel({ data }: PropertyDetailsPanelProps) {
                     <span className="bg-blue-500 text-white text-[11px] font-semibold px-3 py-1 rounded-full">
                         {data.statusLabel}
                     </span>
+                )}
+                {data.isExtraRewardOn && (
+                    <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-3 bg-purple-500 text-white text-[11px] font-semibold px-3 py-1 rounded-full">
+                        <Gem className="size-3.5 text-white" />
+                            Extra Rewards
+                        </span>
+                    </div>
                 )}
             </div>
 
