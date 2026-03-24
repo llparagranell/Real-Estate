@@ -8,6 +8,7 @@ export default function Dashboard() {
             <div>
                 <AnalyticsCards />
             </div>
+            <div></div>
             <div>
                 <MyChart />
             </div>

@@ -15,7 +15,7 @@ type PropertiesAnalyticsResponse = {
   };
   inventoryVelocity: {
     added: { userListings: number; exclusiveListings: number; total: number };
-    sold: { userListings: number; exclusiveListings: number; total: number };
+    sold: { userListings: number; exclusiveListings: number; toRealBro: number; total: number };
     sellThroughRate: number;
   };
   inventoryDistribution: {
@@ -140,6 +140,7 @@ export async function getPropertiesAnalyticsSummary(input: DateRangeInput): Prom
     categoryGroups,
     userListingsAdded,
     userListingsSold,
+    userListingsSoldToRealBro,
     exclusiveListingsAdded,
     exclusiveListingsSold,
     uniqueListingUsers,
@@ -158,6 +159,7 @@ export async function getPropertiesAnalyticsSummary(input: DateRangeInput): Prom
     number,
     number,
     CategoryGroupRow[],
+    number,
     number,
     number,
     number,
@@ -183,6 +185,12 @@ export async function getPropertiesAnalyticsSummary(input: DateRangeInput): Prom
     }),
     prisma.property.count({ where: addedWhere }),
     prisma.property.count({ where: soldWhere }),
+    prisma.property.count({
+      where: {
+        ...rangeWhere("updatedAt", range),
+        status: "SOLDTOREALBRO",
+      },
+    }),
     prisma.exclusiveProperty.count({ where: exclusiveAddedWhere }),
     prisma.exclusiveProperty.count({ where: exclusiveSoldWhere }),
     prisma.property.findMany({
@@ -264,6 +272,7 @@ export async function getPropertiesAnalyticsSummary(input: DateRangeInput): Prom
       sold: {
         userListings: userListingsSold,
         exclusiveListings: exclusiveListingsSold,
+        toRealBro: userListingsSoldToRealBro,
         total: totalSold,
       },
       sellThroughRate: percent(totalSold, totalAdded),
@@ -311,6 +320,7 @@ export function toCompactPropertiesAnalytics(data: PropertiesAnalyticsResponse) 
     propertiesAddedExclusiveListings: data.inventoryVelocity.added.exclusiveListings,
     propertiesSoldTotal: data.inventoryVelocity.sold.total,
     propertiesSoldUserListings: data.inventoryVelocity.sold.userListings,
+    propertiesSoldToRealBro: data.inventoryVelocity.sold.toRealBro,
     propertiesSoldExclusiveListings: data.inventoryVelocity.sold.exclusiveListings,
     sellThroughRate: data.inventoryVelocity.sellThroughRate,
     userListingsTotal: data.inventoryDistribution.userListings.total,

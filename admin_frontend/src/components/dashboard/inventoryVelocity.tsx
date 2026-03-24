@@ -21,14 +21,18 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
-import { Calendar } from "lucide-react"
 
 type PropertiesAnalyticsCompact = {
   propertiesAddedTotal: number
   propertiesSoldTotal: number
+  propertiesAddedUserListings: number
+  propertiesSoldToRealBro: number
+  propertiesAddedExclusiveListings: number
+  propertiesSoldExclusiveListings: number
 }
 
 type PresetKey = "today" | "7d" | "1m" | "6m" | "1y"
+type ListingMode = "all" | "userListing" | "exclusiveListing"
 
 type DateBucket = {
   start: Date
@@ -125,13 +129,14 @@ function getCustomStepDays(start: Date, end: Date): number {
 
 export function InventoryVelocityChart() {
   const [preset, setPreset] = useState<PresetKey>("7d")
+  const [listingMode, setListingMode] = useState<ListingMode>("all")
   const [showCustomPanel, setShowCustomPanel] = useState(false)
   const [customFrom, setCustomFrom] = useState("")
   const [customTo, setCustomTo] = useState("")
   const [customApplied, setCustomApplied] = useState<{ from: string; to: string } | null>(null)
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["dashboard", "inventory-velocity", preset, customApplied?.from, customApplied?.to],
+    queryKey: ["dashboard", "inventory-velocity", listingMode, preset, customApplied?.from, customApplied?.to],
     queryFn: async () => {
       let start: Date
       let end: Date
@@ -159,10 +164,25 @@ export function InventoryVelocityChart() {
             `/analytics/properties?view=compact&from=${from}&to=${to}`
           )
 
+          const compact = response.data.data
+
+          let propertiesAdded = compact.propertiesAddedTotal
+          let propertiesSold = compact.propertiesSoldTotal
+
+          if (listingMode === "userListing") {
+            propertiesAdded = compact.propertiesAddedUserListings
+            propertiesSold = compact.propertiesSoldToRealBro
+          }
+
+          if (listingMode === "exclusiveListing") {
+            propertiesAdded = compact.propertiesAddedExclusiveListings
+            propertiesSold = compact.propertiesSoldExclusiveListings
+          }
+
           return {
             bucket: bucket.label,
-            propertiesAdded: response.data.data.propertiesAddedTotal,
-            propertiesSold: response.data.data.propertiesSoldTotal,
+            propertiesAdded,
+            propertiesSold,
           }
         })
       )
@@ -194,6 +214,12 @@ export function InventoryVelocityChart() {
     setCustomApplied(null)
   }
 
+  const legend = listingMode === "all"
+    ? { added: "Properties Added", sold: "Properties Sold" }
+    : listingMode === "userListing"
+      ? { added: "User Listings Added", sold: "Sold to Realbro" }
+      : { added: "Exclusive Listings Added", sold: "Exclusive Listings Sold" }
+
   if (isError) {
     return <div className="rounded-lg border p-4 text-sm text-red-500">Failed to load inventory velocity.</div>
   }
@@ -207,13 +233,28 @@ export function InventoryVelocityChart() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 md:justify-end">
+          <Select
+            value={listingMode}
+            onValueChange={(value) => {
+              setListingMode(value as ListingMode)
+            }}
+          >
+            <SelectTrigger className="w-42.5 font-medium text-black">
+              <SelectValue placeholder="Select listing type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="userListing">User Listing</SelectItem>
+              <SelectItem value="exclusiveListing">Exclusive Listing</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Button
             size="sm"
-            className= "bg-blue-600 text-white hover:bg-blue-700 font-medium"
+            className="bg-blue-600 text-white hover:bg-blue-700 font-medium"
             onClick={() => setShowCustomPanel((prev) => !prev)}
           >
             Select Date Range
-            <Calendar className="text-zinc-100 size-4 ml-1" />
           </Button>
 
           <Select
@@ -223,7 +264,7 @@ export function InventoryVelocityChart() {
               setCustomApplied(null)
             }}
           >
-            <SelectTrigger className="w-42.5  font-medium text-black">
+            <SelectTrigger className="w-42.5 font-medium text-black">
               <SelectValue placeholder="Select range" />
             </SelectTrigger>
             <SelectContent>
@@ -306,11 +347,11 @@ export function InventoryVelocityChart() {
       <div className="mt-3 flex items-center gap-5 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <span className="size-2.5 rounded bg-blue-500" />
-          Properties Added
+          {legend.added}
         </div>
         <div className="flex items-center gap-1.5">
           <span className="size-2.5 rounded bg-slate-400" />
-          Properties Sold
+          {legend.sold}
         </div>
       </div>
     </div>
