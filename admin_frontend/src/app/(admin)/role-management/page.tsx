@@ -16,6 +16,7 @@ import {
     DialogFooter,
     DialogClose,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 type StaffApiItem = {
     id: string;
@@ -50,18 +51,39 @@ async function getRoleManagement(): Promise<RoleManagementRow[]> {
 }
 
 async function blockStaffApi(id: string) {
-    const response = await api.put(`/staff/management/block-staff/${id}`);
-    return response.data;
+    try{
+        const response = await api.put(`/staff/management/block-staff/${id}`);
+        toast.success("Staff blocked successfully", { position: "bottom-center" });
+        return response.data;
+    }catch(error) {
+        console.error("Block staff error:", error);
+        toast.error("Failed to block staff", { position: "bottom-center" });
+        throw error;
+    }
 }
 
 async function unblockStaffApi(id: string) {
-    const response = await api.put(`/staff/management/unblock-staff/${id}`);
-    return response.data;
+    try {
+        const response = await api.put(`/staff/management/unblock-staff/${id}`);
+        toast.success("Staff unblocked successfully", { position: "bottom-center" });
+        return response.data;
+    }catch(error) {
+        console.error("Unblock staff error:", error);
+        toast.error("Failed to unblock staff", { position: "bottom-center" });
+        throw error;
+    }
 }
 
 async function deleteStaffApi(id: string) {
-    const response = await api.delete(`/staff/management/delete-staff/${id}`);
-    return response.data;
+    try{
+        const response = await api.delete(`/staff/management/delete-staff/${id}`);
+        toast.success("Staff deleted successfully", { position: "bottom-center" });
+        return response.data;
+    }catch(error) {        
+        console.error("Delete staff error:", error);
+        toast.error("Failed to delete staff", { position: "bottom-center" });
+        throw error;
+    }
 }
 
 export default function Page() {
