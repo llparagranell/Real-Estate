@@ -265,6 +265,8 @@ export default function PropertyPage() {
                 property.furnishingStatus ? { label: property.furnishingStatus.replace(/([a-z])([A-Z])/g, "$1 $2"), icon: "furnishing" as const } : null,
                 property.propertyFacing ? { label: property.propertyFacing.replace(/([a-z])([A-Z])/g, "$1 $2"), icon: "facing" as const } : null,
             ].filter((tag): tag is NonNullable<typeof tag> => Boolean(tag)),
+            amenities: (property.amenities ?? []).filter(Boolean),
+            locationAdvantages: (property.locationAdvantages ?? []).filter(Boolean),
             specs: {
                 price: property.listingPrice != null ? String(property.listingPrice) : "0",
                 pricePerSqft:

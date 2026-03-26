@@ -22,6 +22,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react"
+import { toast } from "sonner"
 
 const roles = [
     {
@@ -57,13 +58,20 @@ const formatPhoneWithCountryCode = (phone: string): string | undefined => {
 };
 
 const createStaff = async (input: CreateStaffInput) => {
-    const payload = {
-        ...input,
-        age: input.age > 0 ? input.age : undefined,
-        phone: formatPhoneWithCountryCode(input.phone),
-    };
-    const response = await api.post("/staff/management/create-staff", payload);
-    return response.data;
+    try{
+        const payload = {
+            ...input,
+            age: input.age > 0 ? input.age : undefined,
+            phone: formatPhoneWithCountryCode(input.phone),
+        };
+        const response = await api.post("/staff/management/create-staff", payload);
+        toast.success("Admin staff created successfully", { position: "bottom-center" });
+        return response.data;
+    }catch(error) {
+        console.error("Create staff error:", error);
+        toast.error(error instanceof AxiosError ? (error.response?.data as { error?: string })?.error || "Failed to create staff" : "Failed to create staff", { position: "bottom-center" });
+        throw error;
+    }
 };
 
 export function AddNewStaff() {

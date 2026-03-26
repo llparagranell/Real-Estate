@@ -1,6 +1,5 @@
 "use client"
 
-import { div } from "framer-motion/client"
 import {
     MapPin,
     Home,
@@ -38,6 +37,8 @@ export interface PropertyDetailsPanelData {
     title: string
     location: string
     tags: PropertyTag[]
+    amenities?: string[]
+    locationAdvantages?: string[]
     specs: PropertySpecs
 }
 
@@ -96,6 +97,24 @@ export function PropertyDetailsPanel({ data }: PropertyDetailsPanelProps) {
                         </span>
                     )
                 })}
+                {(data.amenities ?? []).filter(Boolean).map((amenity, index) => (
+                    <span
+                        key={`amenity-${index}-${amenity}`}
+                        className="border border-teal-300 text-teal-700 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 bg-teal-50/50"
+                    >
+                        <Sofa className="size-3.5" />
+                        {amenity}
+                    </span>
+                ))}
+                {(data.locationAdvantages ?? []).filter(Boolean).map((advantage, index) => (
+                    <span
+                        key={`location-advantage-${index}-${advantage}`}
+                        className="border border-teal-300 text-teal-700 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 bg-teal-50/50"
+                    >
+                        <MapPin className="size-3.5" />
+                        {advantage}
+                    </span>
+                ))}
             </div>
 
             <div className="grid grid-cols-2 gap-3 mt-5">

@@ -8,6 +8,12 @@ import { hashPassword } from "../../utils/password";
 export async function createStaff(req: Request, res: Response) {
     try {
         const { firstName, lastName, age, gender, phone, email, password, role } = req.body as createStaffInput;
+        if (email) {
+            const existingStaff = await prisma.staff.findUnique({ where: { email } });
+            if (existingStaff) {
+                return res.status(400).json({ message: "Email already exists" });
+            }
+        }
         if (!password) {
             return res.status(400).json({ message: "Password is required" });
         }
