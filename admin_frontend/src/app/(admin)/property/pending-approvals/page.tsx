@@ -202,6 +202,7 @@ export default function PendingApprovalsPage() {
             </div>
 
             <div className="flex gap-4 mt-4 px-2">
+                <div className="w-full">
                 {isLoading && <p className="text-sm text-gray-500 px-4">Loading...</p>}
                 {error && <p className="text-sm text-red-500 px-4">{error}</p>}
                 {!isLoading && !error && (
@@ -228,6 +229,8 @@ export default function PendingApprovalsPage() {
                         }
                     />
                 )}
+
+                </div>
             </div>
         </div>
     )

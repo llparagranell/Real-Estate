@@ -111,7 +111,7 @@ export function UserActionsAndDetails({ user, onUserUpdated }: { user: FullUserD
                 </div>
             </div>
             {canViewAdminActions && (
-                <div className="grid grid-cols-4 gap-2 items-center flex-wrap ">
+                <div className="flex gap-2 flex-wrap">
                     {user.isBlocked ? (
                         <Button
                             variant="outline"

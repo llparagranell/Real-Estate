@@ -24,7 +24,7 @@ import { fetchBookmarkedPropertyIds, toggleBookmark } from "@/lib/bookmarks"
 type ExclusiveApiRow = {
     id: string
     title: string
-        status: "ACTIVE" | "SOLD_OUT" | "UNLISTED"
+    status: "ACTIVE" | "SOLD_OUT" | "UNLISTED"
     listingPrice: number | null
     city: string | null
     locality: string | null
@@ -206,25 +206,19 @@ export default function ExclusivePropertiesPage() {
             </div>
 
             <div className="flex gap-4 mt-4 px-2">
-                <div>
+                <div className="w-full">
                     {isLoading && <p className="text-sm text-gray-500">Loading exclusive properties...</p>}
                     {error && <p className="text-sm text-red-500">{error}</p>}
-                    {!isLoading && !error && (
-                        <PropertyGrid
-                            properties={filteredExclusiveProperties}
-                            variant="exclusive"
-                            onEdit={(exclusivePropertyId) => router.push(`/property/exclusive-listings/${exclusivePropertyId}/edit`)}
-                            onMarkAsSold={handleMarkAsSold}
-                            onFavorite={handleToggleBookmark}
-                        />
-                    )}
+                        {!isLoading && !error && (
+                            <PropertyGrid
+                                properties={filteredExclusiveProperties}
+                                variant="exclusive"
+                                onEdit={(exclusivePropertyId) => router.push(`/property/exclusive-listings/${exclusivePropertyId}/edit`)}
+                                onMarkAsSold={handleMarkAsSold}
+                                onFavorite={handleToggleBookmark}
+                            />
+                        )}
                 </div>
-                {/* <div className="w-1/3">
-                    <PendingApprovalList
-                        title="Pending Exclusive Approvals"
-                        approvals={mockPendingExclusiveApprovals}
-                    />
-                </div> */}
             </div>
         </div>
     )
