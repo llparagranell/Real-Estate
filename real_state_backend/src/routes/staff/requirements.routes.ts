@@ -8,7 +8,7 @@ import { requireAdminOrSuperAdmin } from "../../middleware/staff";
 
 const router = express.Router();
 
-router.get("/", getPropertyRequirements);
+router.get("/",authMiddleware,requireAdminOrSuperAdmin, getPropertyRequirements);
 router.put("/:id", authMiddleware, requireAdminOrSuperAdmin, updateRequirementStatus);
 
 export default router;

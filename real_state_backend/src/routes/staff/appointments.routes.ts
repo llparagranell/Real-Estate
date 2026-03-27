@@ -1,13 +1,13 @@
 import express from "express";
 import { getAllAppointments, acceptAppointment, rejectAppointment, completeAppointment } from "../../controllers/staff/appointments.staff.controller";
 import { authMiddleware } from "../../middleware/auth";
-import { requireSupportOrAbove } from "../../middleware/staff";
+import { requireAdminOrSuperAdmin } from "../../middleware/staff";
 
 const router = express.Router();
 
-router.get("/", authMiddleware, requireSupportOrAbove, getAllAppointments);
-router.put("/:id/accept", authMiddleware, requireSupportOrAbove, acceptAppointment);
-router.put("/:id/complete", authMiddleware, requireSupportOrAbove, completeAppointment);
-router.put("/:id/reject", authMiddleware, requireSupportOrAbove, rejectAppointment);
+router.get("/", authMiddleware, requireAdminOrSuperAdmin, getAllAppointments);
+router.put("/:id/accept", authMiddleware, requireAdminOrSuperAdmin, acceptAppointment);
+router.put("/:id/complete", authMiddleware, requireAdminOrSuperAdmin, completeAppointment);
+router.put("/:id/reject", authMiddleware, requireAdminOrSuperAdmin, rejectAppointment);
 
 export default router;
