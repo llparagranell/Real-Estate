@@ -7,6 +7,21 @@ const OTP_EXPIRY_MINUTES = 5;
 const OTP_LENGTH = 6;
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+function getEmailBrandHeader() {
+        const logoUrl = process.env.REALBRO_LOGO_URL;
+
+        return `
+                <div style="text-align: center; margin-bottom: 24px;">
+                    ${logoUrl
+                            ? `<img src="${logoUrl}" alt="RealBro" style="height: 56px; margin-bottom: 8px;" />`
+                            : ""}
+                    <div style="font-size: 22px; font-weight: bold; color: #1D7BF0;">
+                        RealBro
+                    </div>
+                </div>
+        `;
+}
+
 // const sesClient = new SESClient({
 //     region: process.env.AWS_SES_REGION || process.env.AWS_REGION,
 //     credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
@@ -174,6 +189,7 @@ export async function sendOtpEmail(email: string, otp: string) {
             "Your OTP code is here",
             `
             <div style="font-family: Arial, sans-serif; max-width:600px; margin:0 auto;">
+              ${getEmailBrandHeader()}
               <h2 style="color:#333;">OTP Verification</h2>
               <p>Your OTP code is:</p>
 
@@ -202,6 +218,7 @@ export async function sendAccountBlockedEmail(email: string) {
             "Your Realbro account has been blocked",
             `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              ${getEmailBrandHeader()}
               <h2 style="color: #333;">Account Blocked</h2>
               <p>Your Realbro account has been blocked by the admin team.</p>
               <p>If you think this is a mistake, please contact us:</p>
@@ -222,6 +239,7 @@ export async function sendAccountUnblockedEmail(email: string) {
             "Your Realbro account has been unblocked",
             `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              ${getEmailBrandHeader()}
               <h2 style="color: #333;">Account Unblocked</h2>
               <p>Your Realbro account has been unblocked by the admin team.</p>
               <p>You can now sign in and continue using Realbro.</p>
