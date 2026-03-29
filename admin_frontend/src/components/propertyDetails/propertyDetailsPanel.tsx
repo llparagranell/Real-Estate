@@ -63,14 +63,14 @@ export function PropertyDetailsPanel({ data }: PropertyDetailsPanelProps) {
                     {data.status}
                 </span>
                 {data.statusLabel && (
-                    <span className="bg-blue-500 text-white text-[11px] font-semibold px-3 py-1 rounded-full">  
+                    <span className="bg-blue-500 text-white text-[11px] font-semibold px-3 py-1 rounded-full">
                         {data.statusLabel}
                     </span>
                 )}
                 {data.isExtraRewardOn && (
                     <div className="flex items-center gap-2">
                         <span className="flex items-center gap-3 bg-purple-500 text-white text-[11px] font-semibold px-3 py-1 rounded-full">
-                        <Gem className="size-3.5 text-white" />
+                            <Gem className="size-3.5 text-white" />
                             Extra Rewards
                         </span>
                     </div>
@@ -120,8 +120,9 @@ export function PropertyDetailsPanel({ data }: PropertyDetailsPanelProps) {
             <div className="grid grid-cols-2 gap-3 mt-5">
                 <div className="border rounded-xl p-4 space-y-3">
                     <div className="text-center">
-                        <p className="font-bold text-lg">₹{data.specs.price}</p>
-                        <p className="text-gray-400 text-xs">₹{data.specs.pricePerSqft}</p>
+                        <p className="font-bold text-lg">
+                            ₹{Number(String(data.specs.price).replace(/,/g, "") || 0).toLocaleString("en-IN")}
+                        </p>
                     </div>
                     <div className="border-t border-dashed" />
                     <div className="text-center">

@@ -245,7 +245,7 @@ export function PropertyCard({
                 </div>
 
                 <div className="flex items-center justify-between">
-                    <p className="font-bold text-base">₹ {property.price}</p>
+                    <p className="font-bold text-base">₹ {Number(String(property.price).replace(/,/g, "") || 0).toLocaleString("en-IN")}</p>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-gray-500 text-[11px]">
                         <span className="flex items-center gap-1">
                             <BedDouble className="size-3.5" />

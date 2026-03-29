@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { formatAgeOfProperty } from "@/lib/utils";
 
 type ExclusiveStatus = "ACTIVE" | "SOLD_OUT" | "UNLISTED";
 type CategoryValue = "" | "RESIDENTIAL" | "COMMERCIAL" | "AGRICULTURAL";
@@ -786,11 +787,11 @@ export function EditExclusiveProperty() {
                             <Select value={form.ageOfProperty} onValueChange={(v) => setField("ageOfProperty", v as FormState["ageOfProperty"])}>
                                 <SelectTrigger className="h-10 border-2 bg-white w-full"><SelectValue placeholder="Select age" /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="ZeroToOne">Zero To One</SelectItem>
-                                    <SelectItem value="OneToThree">One To Three</SelectItem>
-                                    <SelectItem value="ThreeToSix">Three To Six</SelectItem>
-                                    <SelectItem value="SixToTen">Six To Ten</SelectItem>
-                                    <SelectItem value="TenPlus">Ten Plus</SelectItem>
+                                    <SelectItem value="ZeroToOne">{formatAgeOfProperty("ZeroToOne")}</SelectItem>
+                                    <SelectItem value="OneToThree">{formatAgeOfProperty("OneToThree")}</SelectItem>
+                                    <SelectItem value="ThreeToSix">{formatAgeOfProperty("ThreeToSix")}</SelectItem>
+                                    <SelectItem value="SixToTen">{formatAgeOfProperty("SixToTen")}</SelectItem>
+                                    <SelectItem value="TenPlus">{formatAgeOfProperty("TenPlus")}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

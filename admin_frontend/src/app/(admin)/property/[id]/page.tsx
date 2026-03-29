@@ -14,6 +14,7 @@ import type { BrokerInfoData } from "@/components/propertyDetails/propertyBroker
 import type { PropertyDetailsPanelData } from "@/components/propertyDetails/propertyDetailsPanel"
 import { api } from "@/lib/api"
 import { fetchBookmarkedPropertyIds, toggleBookmark } from "@/lib/bookmarks"
+import { formatAgeOfProperty } from "@/lib/utils"
 
 const SOLD_STATUSES = ["SOLDOFFLINE", "SOLDTOREALBRO", "SOLDFROMLISTINGS", "SOLDEXCLUSIVEPROPERTY"]
 
@@ -261,7 +262,7 @@ export default function PropertyPage() {
             tags: [
                 property.category ? { label: property.category, icon: "residential" as const } : null,
                 property.propertyType ? { label: property.propertyType, icon: "apartment" as const } : null,
-                property.ageOfProperty ? { label: property.ageOfProperty, icon: "age" as const } : null,
+                property.ageOfProperty ? { label: formatAgeOfProperty(property.ageOfProperty), icon: "age" as const } : null,
                 property.furnishingStatus ? { label: property.furnishingStatus.replace(/([a-z])([A-Z])/g, "$1 $2"), icon: "furnishing" as const } : null,
                 property.propertyFacing ? { label: property.propertyFacing.replace(/([a-z])([A-Z])/g, "$1 $2"), icon: "facing" as const } : null,
             ].filter((tag): tag is NonNullable<typeof tag> => Boolean(tag)),
