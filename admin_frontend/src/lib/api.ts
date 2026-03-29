@@ -9,6 +9,7 @@ export const api = axios.create({
 });
 
 let isRefreshing = false;
+let isAuthRedirecting = false;
 let failedQueue: Array<{
     resolve: (value?: unknown) => void;
     reject: (reason?: unknown) => void;
@@ -19,6 +20,12 @@ const processQueue = (error: AxiosError | null) => {
     failedQueue = [];
 };
 
+const redirectToSignin = () => {
+    if (typeof window === "undefined" || isAuthRedirecting) return;
+    isAuthRedirecting = true;
+    window.location.replace("/signin");
+};
+
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
@@ -27,16 +34,14 @@ api.interceptors.response.use(
         if (!originalRequest || error.response?.status !== 401) {
             return Promise.reject(error);
         }
-        if (originalRequest._retry && typeof window !== "undefined") {
-            window.location.href = "/signin";
+        if (originalRequest._retry) {
+            redirectToSignin();
             return Promise.reject(error);
         }
 
         // Don't retry refresh endpoint
         if (originalRequest.url?.includes("/staff/auth/refresh")) {
-            if (typeof window !== "undefined") {
-                window.location.href = "/signin";
-            }
+            redirectToSignin();
             return Promise.reject(error);
         }
 
@@ -50,14 +55,12 @@ api.interceptors.response.use(
         isRefreshing = true;
 
         try {
-            await api.post("/staff/auth/refresh");
+            await api.post("/staff/auth/refresh", {});
             processQueue(null);
             return api(originalRequest);
         } catch (refreshError) {
             processQueue(refreshError as AxiosError);
-            if (typeof window !== "undefined") {
-                window.location.href = "/signin";
-            }
+            redirectToSignin();
             return Promise.reject(refreshError);
         } finally {
             isRefreshing = false;

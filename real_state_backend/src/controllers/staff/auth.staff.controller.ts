@@ -1,9 +1,16 @@
 import { prisma } from "../../config/prisma";
 import { Request, Response } from "express";
 import { comparePassword } from "../../utils/password";
-import { signAccessToken, signRefreshToken, signStaffChallengeToken, verifyRefreshToken, verifyStaffChallengeToken } from "../../utils/jwt";
+import { signStaffAccessToken, signStaffRefreshToken, signStaffChallengeToken, verifyRefreshToken, verifyStaffChallengeToken } from "../../utils/jwt";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
+
+const STAFF_ACCESS_COOKIE_MAX_AGE_MS = Number(
+    process.env.STAFF_ACCESS_COOKIE_MAX_AGE_MS ?? process.env.ACCESS_COOKIE_MAX_AGE_MS ?? 7 * 24 * 60 * 60 * 1000
+);
+const STAFF_REFRESH_COOKIE_MAX_AGE_MS = Number(
+    process.env.STAFF_REFRESH_COOKIE_MAX_AGE_MS ?? process.env.REFRESH_COOKIE_MAX_AGE_MS ?? 28 * 24 * 60 * 60 * 1000
+);
 
 type StaffAuthAccount = {
     id: string;
@@ -246,8 +253,8 @@ export async function confirm2faSetup(req: Request, res: Response) {
                 data: { isTwoFactorEnabled: true },
             });
         }
-        const accessToken = signAccessToken({ id: user.id, role: user.role });
-        const refreshToken = signRefreshToken({ id: user.id, role: user.role });
+        const accessToken = signStaffAccessToken({ id: user.id, role: user.role });
+        const refreshToken = signStaffRefreshToken({ id: user.id, role: user.role });
 
         const isProd = process.env.NODE_ENV === "production";
         const cookieOptions = {
@@ -257,8 +264,8 @@ export async function confirm2faSetup(req: Request, res: Response) {
             path: "/",
         };
 
-        res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7 days
-        res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 28 * 24 * 60 * 60 * 1000 }); // 28 days
+        res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: STAFF_ACCESS_COOKIE_MAX_AGE_MS });
+        res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: STAFF_REFRESH_COOKIE_MAX_AGE_MS });
 
         return res.status(200).json({
             message: "2FA setup confirmed",
@@ -309,8 +316,8 @@ export async function verify2fa(req: Request, res: Response) {
             return res.status(400).json({ error: "Invalid 2FA code" });
         }
 
-        const accessToken = signAccessToken({ id: user.id, role: user.role });
-        const refreshToken = signRefreshToken({ id: user.id, role: user.role });
+        const accessToken = signStaffAccessToken({ id: user.id, role: user.role });
+        const refreshToken = signStaffRefreshToken({ id: user.id, role: user.role });
 
         const isProd = process.env.NODE_ENV === "production";
         const cookieOptions = {
@@ -320,9 +327,9 @@ export async function verify2fa(req: Request, res: Response) {
             path: "/",
         };
 
-        res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7 days
-        res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 28 * 24 * 60 * 60 * 1000 }); // 28 days
-        res.cookie("role", user.role, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7 days
+        res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: STAFF_ACCESS_COOKIE_MAX_AGE_MS });
+        res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: STAFF_REFRESH_COOKIE_MAX_AGE_MS });
+        res.cookie("role", user.role, { ...cookieOptions, maxAge: STAFF_ACCESS_COOKIE_MAX_AGE_MS });
 
         return res.status(200).json({
             message: "2FA verification successful",
@@ -376,6 +383,13 @@ export async function me(req: Request, res: Response) {
 
 export async function signout(req: Request, res: Response) {
     try {
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax" as const,
+            path: "/",
+        };
+
         // Read refreshToken from cookie (httpOnly) or body (backward compatibility)
         const refreshToken = req.cookies?.refreshToken ?? req.body?.refreshToken;
         if (refreshToken) {
@@ -384,12 +398,6 @@ export async function signout(req: Request, res: Response) {
             });
         }
         // Clear auth cookies
-        const cookieOptions = {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax" as const,
-            path: "/",
-        };
         res.clearCookie("accessToken", cookieOptions);
         res.clearCookie("refreshToken", cookieOptions);
         res.clearCookie("role", cookieOptions);
@@ -402,19 +410,6 @@ export async function signout(req: Request, res: Response) {
 
 export async function refreshAccessToken(req: Request, res: Response) {
     try {
-        // Read refreshToken from cookie (httpOnly) or body (backward compatibility)
-        const refreshToken = req.cookies?.refreshToken ?? req.body?.refreshToken;
-        if (!refreshToken) {
-            return res.status(401).json({ error: "Refresh token required" });
-        }
-
-        const payload = verifyRefreshToken(refreshToken);
-        if (!payload) {
-            return res.status(401).json({ error: "Invalid or expired refresh token" });
-        }
-
-        const newAccessToken = signAccessToken({ id: payload.id, role: payload.role! });
-
         const isProd = process.env.NODE_ENV === "production";
         const cookieOptions = {
             httpOnly: true,
@@ -423,7 +418,32 @@ export async function refreshAccessToken(req: Request, res: Response) {
             path: "/",
         };
 
-        res.cookie("accessToken", newAccessToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7 days
+        const clearAuthCookies = () => {
+            res.clearCookie("accessToken", cookieOptions);
+            res.clearCookie("refreshToken", cookieOptions);
+            res.clearCookie("role", cookieOptions);
+        };
+
+        // Read refreshToken from cookie (httpOnly) or body (backward compatibility)
+        const refreshToken = req.cookies?.refreshToken ?? req.body?.refreshToken;
+        if (!refreshToken) {
+            clearAuthCookies();
+            return res.status(401).json({ error: "Refresh token required" });
+        }
+
+        const payload = verifyRefreshToken(refreshToken);
+        if (!payload) {
+            clearAuthCookies();
+            return res.status(401).json({ error: "Invalid or expired refresh token" });
+        }
+
+        const newAccessToken = signStaffAccessToken({ id: payload.id, role: payload.role! });
+        const newRefreshToken = signStaffRefreshToken({ id: payload.id, role: payload.role! });
+
+        // Rotate refresh token on every refresh to provide sliding inactivity expiry.
+        res.cookie("accessToken", newAccessToken, { ...cookieOptions, maxAge: STAFF_ACCESS_COOKIE_MAX_AGE_MS });
+        res.cookie("refreshToken", newRefreshToken, { ...cookieOptions, maxAge: STAFF_REFRESH_COOKIE_MAX_AGE_MS });
+        res.cookie("role", payload.role, { ...cookieOptions, maxAge: STAFF_ACCESS_COOKIE_MAX_AGE_MS });
 
         return res.status(200).json({
             message: "Access token refreshed",

@@ -12,6 +12,6 @@ router.post('/setup2fa', validate(setup2faSchema), setup2fa);
 router.post('/confirm2faSetup', validate(verify2faSchema), confirm2faSetup);
 router.post('/verify2fa', validate(verify2faSchema), verify2fa);
 router.post('/signout', validate(signoutStaffSchema), signout);
-router.post('/refresh', validate(signoutStaffSchema), refreshAccessToken);
+router.post('/refresh', refreshAccessToken);
 
 export default router;
